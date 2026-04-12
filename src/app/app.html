@@ -1,0 +1,150 @@
+<div class="min-h-screen bg-[#020617] text-white font-sans">
+  <!-- Header -->
+  <header class="fixed top-0 left-0 right-0 z-50 bg-[#020617]/80 backdrop-blur-md border-b border-white/10">
+    <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      <div class="text-2xl font-bold tracking-tighter text-white">KIT GIZMO</div>
+      <div class="flex items-center gap-4">
+        <a routerLink="/login" class="px-5 py-2.5 text-sm font-medium text-white hover:text-[#38BDF8] transition-colors">Login</a>
+        <a routerLink="/signup" class="px-5 py-2.5 text-sm font-medium bg-[#38BDF8] text-[#020617] rounded-xl hover:bg-[#38BDF8]/90 transition-colors">Sign Up</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="relative pt-32 pb-20 px-6 overflow-hidden">
+    <div class="absolute inset-0 z-0 opacity-20">
+      <div class="absolute -top-24 -left-24 w-96 h-96 bg-[#38BDF8] rounded-full blur-[128px] animate-pulse"></div>
+      <div class="absolute bottom-0 right-0 w-96 h-96 bg-[#38BDF8] rounded-full blur-[128px] animate-pulse delay-1000"></div>
+    </div>
+    <div class="relative z-10 max-w-5xl mx-auto text-center">
+      <h1 class="text-5xl md:text-7xl font-bold tracking-tight mb-6">Elevate Your Social Media Presence instantly with KIT GIZMO</h1>
+      <p class="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">Empowering your digital success with high-impact traffic and data-driven strategies.</p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a routerLink="/signup" class="px-8 py-4 bg-[#38BDF8] text-[#020617] rounded-xl font-semibold hover:bg-[#38BDF8]/90 transition-colors text-center">Start Your Growth Now →</a>
+        <button class="px-8 py-4 bg-white/5 text-white rounded-xl font-semibold hover:bg-white/10 transition-colors">View Our Premium Services</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust Stats -->
+  <section id="trust-stats" class="py-20 bg-[#0F172A]">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-bold text-center mb-16 opacity-0">Trusted by Thousands of Creators and Brands Worldwide</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="trust-card bg-[#020617] p-8 rounded-2xl border border-white/5 opacity-0">
+          <mat-icon class="text-[#38BDF8] mb-4">group</mat-icon>
+          <div class="text-4xl font-bold mb-2">{{ users() | number:'1.0-0' }}+</div>
+          <div class="text-gray-400">Users Trusted Us</div>
+        </div>
+        <div class="trust-card bg-[#020617] p-8 rounded-2xl border border-white/5 opacity-0">
+          <mat-icon class="text-[#38BDF8] mb-4">task_alt</mat-icon>
+          <div class="text-4xl font-bold mb-2">{{ projects() | number:'1.0-0' }}+</div>
+          <div class="text-gray-400">Active Projects Completed</div>
+        </div>
+        <div class="trust-card bg-[#020617] p-8 rounded-2xl border border-white/5 opacity-0">
+          <mat-icon class="text-[#38BDF8] mb-4">business</mat-icon>
+          <div class="text-4xl font-bold mb-2">{{ clients() | number:'1.0-0' }}+</div>
+          <div class="text-gray-400">Business Clients</div>
+        </div>
+        <div class="trust-card bg-[#020617] p-8 rounded-2xl border border-white/5 opacity-0">
+          <mat-icon class="text-[#38BDF8] mb-4">star</mat-icon>
+          <div class="text-4xl font-bold mb-2">{{ rating() }} Star</div>
+          <div class="text-gray-400">Average Client Rating</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI Performance Showcase -->
+  <section id="ai-performance" class="py-32 px-6 bg-[#020617] relative overflow-hidden">
+    <!-- Background Glow -->
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+    <div class="max-w-6xl mx-auto relative z-10">
+      <div class="text-center mb-20">
+        <h2 class="ai-header text-4xl md:text-5xl font-bold mb-6 tracking-tight opacity-0">
+          Supercharge Your Sales with <span class="text-emerald-400">AI-Driven</span> Traffic Optimization
+        </h2>
+        <p class="ai-sub text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed opacity-0">
+          Using our advanced AI algorithms for ad delivery increases your conversion probability by up to 
+          <span class="text-emerald-400 font-bold glow-green">90% More Sales</span> compared to traditional traffic methods.
+        </p>
+      </div>
+
+      <!-- Visual Comparison -->
+      <div id="comparison-card" class="grid md:grid-cols-2 gap-8 mb-24">
+        <div class="comp-card p-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-sm hover:border-white/20 transition-colors opacity-0">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center">
+              <mat-icon class="text-gray-400">trending_down</mat-icon>
+            </div>
+            <h3 class="text-2xl font-semibold text-gray-300">Traditional Ads</h3>
+          </div>
+          <ul class="space-y-4">
+            <li class="flex items-center gap-3 text-gray-500">
+              <mat-icon class="text-red-500/50 text-sm">close</mat-icon>
+              <span>Low engagement rates</span>
+            </li>
+            <li class="flex items-center gap-3 text-gray-500">
+              <mat-icon class="text-red-500/50 text-sm">close</mat-icon>
+              <span>High bounce rate (60%+)</span>
+            </li>
+            <li class="flex items-center gap-3 text-gray-500">
+              <mat-icon class="text-red-500/50 text-sm">close</mat-icon>
+              <span>Generic, broad targeting</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="comp-card p-8 rounded-3xl bg-emerald-500/5 border border-emerald-500/20 backdrop-blur-sm hover:border-emerald-500/40 transition-colors relative group opacity-0">
+          <div class="absolute -top-4 -right-4 bg-emerald-500 text-black text-xs font-bold px-3 py-1 rounded-full shadow-lg shadow-emerald-500/20">RECOMMENDED</div>
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+              <mat-icon class="text-emerald-400">auto_awesome</mat-icon>
+            </div>
+            <h3 class="text-2xl font-semibold text-white">KIT GIZMO AI Ads</h3>
+          </div>
+          <ul class="space-y-4">
+            <li class="flex items-center gap-3 text-emerald-50">
+              <mat-icon class="text-emerald-400">check_circle</mat-icon>
+              <span class="font-semibold">90% More Sales Chance</span>
+            </li>
+            <li class="flex items-center gap-3 text-emerald-50">
+              <mat-icon class="text-emerald-400">check_circle</mat-icon>
+              <span>Precision AI Targeting</span>
+            </li>
+            <li class="flex items-center gap-3 text-emerald-50">
+              <mat-icon class="text-emerald-400">check_circle</mat-icon>
+              <span>High User Retentivity</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Key Features -->
+      <div id="feature-cards" class="grid md:grid-cols-3 gap-8 mb-20">
+        <div class="feature-card p-8 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 opacity-0">
+          <mat-icon class="text-emerald-400 mb-4 scale-125">psychology</mat-icon>
+          <h4 class="text-xl font-bold mb-3 text-white">Smart Targeting</h4>
+          <p class="text-gray-400 leading-relaxed">Our AI finds buyers, not just visitors, by analyzing behavioral patterns in real-time.</p>
+        </div>
+        <div class="feature-card p-8 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 opacity-0">
+          <mat-icon class="text-emerald-400 mb-4 scale-125">rocket_launch</mat-icon>
+          <h4 class="text-xl font-bold mb-3 text-white">Viral Growth</h4>
+          <p class="text-gray-400 leading-relaxed">Optimized for social media algorithms including TikTok, Meta, and Google Ads.</p>
+        </div>
+        <div class="feature-card p-8 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 opacity-0">
+          <mat-icon class="text-emerald-400 mb-4 scale-125">bolt</mat-icon>
+          <h4 class="text-xl font-bold mb-3 text-white">Instant Results</h4>
+          <p class="text-gray-400 leading-relaxed">Start seeing high-quality traffic flow within minutes of your order approval.</p>
+        </div>
+      </div>
+
+      <div class="text-center">
+        <a routerLink="/signup" class="inline-block px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-full transition-all hover:scale-105 shadow-lg shadow-emerald-500/20">
+          Try AI Traffic Now →
+        </a>
+      </div>
+    </div>
+  </section>
+</div>
