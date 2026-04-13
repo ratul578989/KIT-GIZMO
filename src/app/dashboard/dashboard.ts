@@ -4,7 +4,7 @@ import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
 import { auth, db } from '../../firebase';
-import { signOut, onAuthStateChanged, User, sendEmailVerification } from 'firebase/auth';
+import { signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { doc, collection, query, where, onSnapshot, serverTimestamp, runTransaction, Timestamp } from 'firebase/firestore';
 import * as d3 from 'd3';
 
@@ -77,29 +77,24 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   });
 
   currentSection = signal<string>('overview');
-  isEmailVerified = signal(true);
-  isResendingVerification = signal(false);
   
   // Order Form
   categories = [
-    { id: 'shopify', name: 'Shopify Traffic' },
-    { id: 'social', name: 'Social Media Growth' },
-    { id: 'tiktok', name: 'TikTok Viral' }
+    { id: 'ig-shopify', name: 'Instagram to Shopify traffic USA' },
+    { id: 'fb-shopify', name: 'Facebook to Shopify traffic USA' },
+    { id: 'pin-shopify', name: 'Pinterest to Shopify traffic USA' },
+    { id: 'yt-shopify', name: 'YouTube to Shopify traffic USA' },
+    { id: 'tt-shopify', name: 'Tiktok to Shopify traffic USA' },
+    { id: 'google-shopify', name: 'Google to Shopify traffic USA' }
   ];
   
   services: Record<string, { id: string, name: string, rate: number }[]> = {
-    'shopify': [
-      { id: 's1', name: 'Premium USA Traffic', rate: 14.50 },
-      { id: 's2', name: 'Standard Global Traffic', rate: 8.00 }
-    ],
-    'social': [
-      { id: 'i1', name: 'Instagram Real Followers', rate: 12.00 },
-      { id: 'i2', name: 'Facebook Page Likes', rate: 6.50 }
-    ],
-    'tiktok': [
-      { id: 't1', name: 'TikTok Video Views', rate: 2.10 },
-      { id: 't2', name: 'TikTok Real Followers', rate: 18.00 }
-    ]
+    'ig-shopify': [{ id: 'ig1', name: 'Instagram Traffic', rate: 13.56 }],
+    'fb-shopify': [{ id: 'fb1', name: 'Facebook Traffic', rate: 13.56 }],
+    'pin-shopify': [{ id: 'pin1', name: 'Pinterest Traffic', rate: 13.56 }],
+    'yt-shopify': [{ id: 'yt1', name: 'YouTube Traffic', rate: 13.56 }],
+    'tt-shopify': [{ id: 'tt1', name: 'Tiktok Traffic', rate: 13.56 }],
+    'google-shopify': [{ id: 'g1', name: 'Google Traffic', rate: 13.56 }]
   };
 
   selectedCategory = '';
@@ -133,7 +128,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.unsubscribeAuth = onAuthStateChanged(auth, async (user: User | null) => {
       if (user) {
-        this.isEmailVerified.set(user.emailVerified);
         this.isAdmin.set(user.email === 'info.kitgizmo@gmail.com');
         
         // Real-time user profile
@@ -154,39 +148,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         this.router.navigate(['/login']);
       }
     });
-  }
-
-  async resendVerification() {
-    const user = auth.currentUser;
-    if (!user || this.isResendingVerification()) return;
-
-    this.isResendingVerification.set(true);
-    try {
-      await sendEmailVerification(user);
-      this.orderMessage.set({ type: 'success', text: 'Verification email sent! Please check your inbox.' });
-    } catch (error) {
-      console.error('Resend error:', error);
-      this.orderMessage.set({ type: 'error', text: 'Failed to send verification email. Please try again later.' });
-    } finally {
-      this.isResendingVerification.set(false);
-    }
-  }
-
-  async checkVerification() {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    try {
-      await user.reload();
-      this.isEmailVerified.set(auth.currentUser?.emailVerified || false);
-      if (this.isEmailVerified()) {
-        this.orderMessage.set({ type: 'success', text: 'Email verified successfully!' });
-      } else {
-        this.orderMessage.set({ type: 'error', text: 'Email is still not verified.' });
-      }
-    } catch (error) {
-      console.error('Check verification error:', error);
-    }
   }
 
   ngAfterViewInit() {

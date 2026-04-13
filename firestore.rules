@@ -31,31 +31,27 @@ service cloud.firestore {
              data.createdAt is timestamp;
     }
 
-    function isEmailVerified() {
-      return isAuthenticated() && request.auth.token.email_verified == true;
-    }
-
     match /users/{userId} {
       allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow create: if isAuthenticated() && request.auth.uid == userId && isValidUser(request.resource.data);
-      allow update: if isEmailVerified() && request.auth.uid == userId && isValidUser(request.resource.data);
+      allow update: if isAuthenticated() && request.auth.uid == userId && isValidUser(request.resource.data);
     }
 
     match /orders/{orderId} {
       allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isEmailVerified() && isValidOrder(request.resource.data);
+      allow create: if isAuthenticated() && isValidOrder(request.resource.data);
       allow update: if isAdmin();
     }
 
     match /deposits/{depositId} {
       allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isEmailVerified() && request.resource.data.userId == request.auth.uid && request.resource.data.status == 'pending';
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && request.resource.data.status == 'pending';
       allow update: if isAdmin();
     }
 
     match /tickets/{ticketId} {
       allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isEmailVerified() && request.resource.data.userId == request.auth.uid && request.resource.data.status == 'open';
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && request.resource.data.status == 'open';
       allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
   }
