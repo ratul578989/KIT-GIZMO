@@ -163,15 +163,12 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   showDepositSuccess = signal(false);
   addressCopied = signal(false);
   
-  // Profile & Password
-  profilePreviewUrl = signal<string | null>(null);
-  selectedFile: File | null = null;
-  isSavingProfile = signal(false);
+  // Password
   passwordForm = { current: '', new: '', confirm: '' };
   passwordError = signal<string | null>(null);
   passwordSuccess = signal<string | null>(null);
 
-  onFileSelected(event: Event) {
+  onTicketFileSelected(event: Event) {
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
     if (file) {
@@ -179,24 +176,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         this.orderMessage.set({ type: 'error', text: 'Maximum file size: 10MB' });
         return;
       }
-      this.selectedFile = file;
-      this.profilePreviewUrl.set(URL.createObjectURL(file));
-    }
-  }
-
-  async saveProfile() {
-    if (!this.selectedFile || !auth.currentUser) return;
-    this.isSavingProfile.set(true);
-    try {
-      const storageRef = ref(storage, `profiles/${auth.currentUser.uid}`);
-      await uploadBytes(storageRef, this.selectedFile);
-      const url = await getDownloadURL(storageRef);
-      await updateDoc(doc(db, 'users', auth.currentUser.uid), { profilePicture: url });
-      alert('Profile updated successfully!');
-    } catch {
-      alert('Failed to update profile. Please try again.');
-    } finally {
-      this.isSavingProfile.set(false);
+      this.selectedTicketFile.set(file);
+      this.filePreview.set(URL.createObjectURL(file));
     }
   }
 
@@ -237,6 +218,24 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   orderSearchTerm = signal('');
   orderStatusFilter = signal('all');
+  
+  // Time Selector
+  isTimeSelectorOpen = signal(false);
+  timeRange = signal('30d');
+  timeRangeLabel = computed(() => {
+    switch(this.timeRange()) {
+      case '7d': return 'Last 7 days';
+      case '90d': return 'Last 90 days';
+      default: return 'Last 30 days';
+    }
+  });
+
+  toggleTimeSelector() { this.isTimeSelectorOpen.update(v => !v); }
+  setTimeRange(range: string) { 
+    this.timeRange.set(range); 
+    this.isTimeSelectorOpen.set(false);
+    this.updateChart();
+  }
 
   filteredOrders = computed(() => {
     const term = this.orderSearchTerm().toLowerCase();
@@ -311,6 +310,9 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         onSnapshot(ticketsQ, (snapshot) => {
           this.tickets.set(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ticket)));
         });
+
+        // Track Activity
+        this.trackActivity(user.uid);
       } else {
         this.router.navigate(['/login']);
       }
@@ -349,6 +351,16 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       ...prev,
       [menu]: !prev[menu]
     }));
+  }
+
+  private async trackActivity(uid: string) {
+    try {
+      await updateDoc(doc(db, 'users', uid), {
+        lastActive: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('Error tracking activity:', error);
+    }
   }
 
   onMethodChange() {
@@ -579,8 +591,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     const element = this.chartContainer.nativeElement;
     d3.select(element).selectAll('*').remove();
 
-    const data = this.getChartData();
-    const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+    const data = this.getSpentChartData();
+    const margin = { top: 20, right: 20, bottom: 30, left: 50 };
     const width = element.clientWidth - margin.left - margin.right;
     const height = 300 - margin.top - margin.bottom;
 
@@ -596,18 +608,18 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       .range([0, width]);
 
     const y = d3.scaleLinear()
-      .domain([0, d3.max(data, d => d.count) || 10])
+      .domain([0, d3.max(data, d => d.spent) || 10])
       .range([height, 0]);
 
-    const area = d3.area<{ date: Date, count: number }>()
+    const area = d3.area<{ date: Date, spent: number }>()
       .x(d => x(d.date))
       .y0(height)
-      .y1(d => y(d.count))
+      .y1(d => y(d.spent))
       .curve(d3.curveMonotoneX);
 
-    const line = d3.line<{ date: Date, count: number }>()
+    const line = d3.line<{ date: Date, spent: number }>()
       .x(d => x(d.date))
-      .y(d => y(d.count))
+      .y(d => y(d.spent))
       .curve(d3.curveMonotoneX);
 
     // Gradient
@@ -616,7 +628,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       .attr('id', 'area-gradient')
       .attr('x1', '0%').attr('y1', '0%')
       .attr('x2', '0%').attr('y2', '100%');
-
     gradient.append('stop').attr('offset', '0%').attr('stop-color', '#38BDF8').attr('stop-opacity', 0.3);
     gradient.append('stop').attr('offset', '100%').attr('stop-color', '#38BDF8').attr('stop-opacity', 0);
 
@@ -632,37 +643,35 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       .attr('stroke-width', 2)
       .attr('d', line);
 
-    // Axes
     svg.append('g')
       .attr('transform', `translate(0,${height})`)
-      .call(d3.axisBottom(x).ticks(7).tickFormat(d3.timeFormat('%b %d') as (d: Date | d3.NumberValue, i: number) => string))
+      .call(d3.axisBottom(x).ticks(5))
       .attr('color', '#475569');
 
     svg.append('g')
-      .call(d3.axisLeft(y).ticks(5))
+      .call(d3.axisLeft(y).ticks(5).tickFormat(d => `$${(d.valueOf()).toFixed(2)}`))
       .attr('color', '#475569');
   }
 
-  private getChartData() {
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
+  private getSpentChartData() {
+    const rangeDays = this.timeRange() === '7d' ? 7 : this.timeRange() === '90d' ? 90 : 30;
+    const days = Array.from({ length: rangeDays }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
       d.setHours(0, 0, 0, 0);
       return d;
     }).reverse();
 
-    const orderCounts = last7Days.map(date => {
-      const count = this.orders().filter(o => {
+    return days.map(date => {
+      const spent = this.orders().filter(o => {
         const orderDate = o.createdAt?.toDate();
         return orderDate && 
                orderDate.getFullYear() === date.getFullYear() &&
                orderDate.getMonth() === date.getMonth() &&
                orderDate.getDate() === date.getDate();
-      }).length;
-      return { date, count };
+      }).reduce((acc, o) => acc + (o.charge || 0), 0);
+      return { date, spent };
     });
-
-    return orderCounts;
   }
 
   async logout() {

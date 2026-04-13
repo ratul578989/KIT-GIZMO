@@ -3,8 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-import { auth } from '../../../firebase';
+import { auth, db } from '../../../firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 @Component({
   selector: 'app-login',
@@ -97,7 +98,15 @@ export class LoginComponent {
     this.errorMessage.set('');
 
     try {
-      await signInWithEmailAndPassword(auth, this.email, this.password);
+      const userCredential = await signInWithEmailAndPassword(auth, this.email, this.password);
+      const user = userCredential.user;
+      
+      // Update lastLogin and lastActive (use setDoc with merge: true in case doc doesn't exist)
+      await setDoc(doc(db, 'users', user.uid), {
+        lastLogin: serverTimestamp(),
+        lastActive: serverTimestamp()
+      }, { merge: true });
+
       this.router.navigate(['/dashboard']);
     } catch (error: unknown) {
       console.error('Login error:', error);

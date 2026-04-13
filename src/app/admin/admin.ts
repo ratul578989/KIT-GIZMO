@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
@@ -15,6 +15,9 @@ interface User {
   email: string;
   role: string;
   balance: number;
+  totalSpent?: number;
+  lastLogin?: Timestamp;
+  lastActive?: Timestamp;
   createdAt: Timestamp;
 }
 
@@ -134,37 +137,113 @@ interface PaymentMethod {
 
         <!-- Users Section -->
         @if (currentSection() === 'users') {
+          <!-- Admin Insights -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white/5 border border-white/10 p-6 rounded-2xl">
+              <div class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">Total Registered Users</div>
+              <div class="text-3xl font-bold text-[#38BDF8]">{{ adminStats().totalUsers }}</div>
+            </div>
+            <div class="bg-white/5 border border-white/10 p-6 rounded-2xl">
+              <div class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">Active Today</div>
+              <div class="text-3xl font-bold text-emerald-400">{{ adminStats().activeToday }}</div>
+            </div>
+            <div class="bg-white/5 border border-white/10 p-6 rounded-2xl">
+              <div class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">New Signups (Today)</div>
+              <div class="text-3xl font-bold text-amber-400">{{ adminStats().newSignupsToday }}</div>
+            </div>
+          </div>
+
           <div class="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
             <div class="overflow-x-auto">
               <table class="w-full text-left">
                 <thead>
                   <tr class="text-gray-500 text-xs font-bold uppercase tracking-widest border-b border-white/5">
                     <th class="p-6">User</th>
-                    <th class="p-6">Role</th>
+                    <th class="p-6">Status</th>
+                    <th class="p-6">Last Login</th>
                     <th class="p-6">Balance</th>
-                    <th class="p-6">Joined</th>
+                    <th class="p-6">Actions</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-white/5">
                   @for (user of users(); track user.uid) {
-                    <tr class="hover:bg-white/5 transition-colors">
+                    <tr class="hover:bg-white/5 transition-colors group">
                       <td class="p-6">
                         <div class="font-medium">{{ user.fullName }}</div>
                         <div class="text-xs text-gray-500">{{ user.email }}</div>
                       </td>
                       <td class="p-6">
-                        <span [class]="user.role === 'admin' ? 'text-emerald-400' : 'text-[#38BDF8]'">
-                          {{ user.role }}
-                        </span>
+                        <div class="flex items-center gap-2">
+                          <div [class]="'w-2 h-2 rounded-full ' + (isOnline(user) ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-gray-500')"></div>
+                          <span [class]="'text-xs font-medium ' + (isOnline(user) ? 'text-emerald-400' : 'text-gray-500')">
+                            {{ isOnline(user) ? 'Online' : 'Offline' }}
+                          </span>
+                        </div>
+                      </td>
+                      <td class="p-6 text-gray-400 text-sm">
+                        {{ user.lastLogin ? (user.lastLogin.toDate() | date:'dd MMM, yyyy - hh:mm a') : 'Never' }}
                       </td>
                       <td class="p-6 font-bold text-[#38BDF8]">{{ user.balance | number:'1.2-2' }}</td>
-                      <td class="p-6 text-gray-500 text-sm">
-                        {{ user.createdAt?.toDate() | date:'mediumDate' }}
+                      <td class="p-6">
+                        <button (click)="viewUser(user)" class="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold hover:bg-[#38BDF8] hover:text-[#020617] transition-all">
+                          View
+                        </button>
                       </td>
                     </tr>
                   }
                 </tbody>
               </table>
+            </div>
+          </div>
+        }
+
+        <!-- User Detail Modal -->
+        @if (selectedUser()) {
+          <div class="fixed inset-0 z-[110] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" (click)="selectedUser.set(null)" (keydown.escape)="selectedUser.set(null)" tabindex="0">
+            <div class="bg-[#020617] border border-white/10 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in duration-300" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()" tabindex="0">
+              <div class="p-8 border-b border-white/10 flex justify-between items-center bg-white/[0.02]">
+                <div>
+                  <h2 class="text-2xl font-bold">{{ selectedUser()?.fullName }}</h2>
+                  <p class="text-gray-500 text-sm">{{ selectedUser()?.email }}</p>
+                </div>
+                <button (click)="selectedUser.set(null)" class="p-2 hover:bg-white/5 rounded-full transition-all">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+              
+              <div class="p-8 space-y-8">
+                <div class="grid grid-cols-2 gap-8">
+                  <div class="space-y-1">
+                    <div class="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Registration Date</div>
+                    <div class="text-lg font-medium">{{ selectedUser()?.createdAt?.toDate() | date:'dd MMMM, yyyy - hh:mm a' }}</div>
+                  </div>
+                  <div class="space-y-1">
+                    <div class="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Total Spent</div>
+                    <div class="text-lg font-bold text-[#38BDF8]">$ {{ (selectedUser()?.totalSpent || 0) | number:'1.2-2' }}</div>
+                  </div>
+                </div>
+
+                <div class="space-y-4">
+                  <div class="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Recent Activity Log</div>
+                  <div class="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                    @for (order of userOrders(selectedUser()!.uid); track order.id) {
+                      <div class="bg-white/5 border border-white/5 p-4 rounded-xl flex items-center justify-between">
+                        <div>
+                          <div class="text-sm font-medium">{{ order.service }}</div>
+                          <div class="text-[10px] text-gray-500">{{ order.createdAt?.toDate() | date:'medium' }}</div>
+                        </div>
+                        <div class="text-right">
+                          <div class="text-sm font-bold text-[#38BDF8]">- $ {{ order.charge | number:'1.2-2' }}</div>
+                          <div class="text-[10px] uppercase font-bold text-gray-500">{{ order.status }}</div>
+                        </div>
+                      </div>
+                    }
+                    @if (userOrders(selectedUser()!.uid).length === 0) {
+                      <div class="text-center py-8 text-gray-500 text-sm italic">No recent activity found.</div>
+                    }
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         }
@@ -463,7 +542,21 @@ interface PaymentMethod {
       </main>
     </div>
   `,
-  styles: ``,
+  styles: [`
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.2);
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(56, 189, 248, 0.4);
+    }
+  `],
 })
 export class AdminComponent implements OnInit, OnDestroy {
   private router = inject(Router);
@@ -475,6 +568,31 @@ export class AdminComponent implements OnInit, OnDestroy {
   tickets = signal<Ticket[]>([]);
   paymentMethods = signal<PaymentMethod[]>([]);
   
+  selectedUser = signal<User | null>(null);
+  adminStats = computed(() => {
+    const allUsers = this.users();
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    
+    return {
+      totalUsers: allUsers.length,
+      activeToday: allUsers.filter(u => u.lastLogin && u.lastLogin.toMillis() >= today).length,
+      newSignupsToday: allUsers.filter(u => u.createdAt && u.createdAt.toMillis() >= today).length
+    };
+  });
+
+  userOrders = (uid: string) => this.orders().filter(o => o.userId === uid).slice(0, 5);
+
+  isOnline(user: User): boolean {
+    if (!user.lastActive) return false;
+    const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+    return user.lastActive.toMillis() > tenMinutesAgo;
+  }
+
+  viewUser(user: User) {
+    this.selectedUser.set(user);
+  }
+
   selectedTicket = signal<Ticket | null>(null);
   replyMessage = signal('');
   isReplying = signal(false);

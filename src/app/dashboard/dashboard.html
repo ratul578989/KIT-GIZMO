@@ -95,7 +95,6 @@
         </button>
         @if (expandedMenus()['profile']) {
           <div class="pl-10 space-y-1">
-            <button (click)="setSection('account-settings')" class="w-full text-left p-2 text-sm text-gray-500 hover:text-[#38BDF8] transition-colors">Account Settings</button>
             <button (click)="setSection('change-password')" class="w-full text-left p-2 text-sm text-gray-500 hover:text-[#38BDF8] transition-colors">Change Password</button>
           </div>
         }
@@ -294,10 +293,22 @@
           <div class="lg:col-span-2 bg-white/5 border border-white/5 rounded-2xl p-6">
             <div class="flex items-center justify-between mb-6">
               <div class="flex items-center gap-2">
-                <mat-icon class="text-[#38BDF8]">insights</mat-icon>
-                <h2 class="text-lg font-bold">Order Statistics</h2>
+                <mat-icon class="text-[#38BDF8]">attach_money</mat-icon>
+                <h2 class="text-lg font-bold">Spent</h2>
               </div>
-              <div class="text-[10px] text-gray-500 uppercase tracking-widest">Last 7 Days</div>
+              <div class="relative">
+                <button (click)="toggleTimeSelector()" class="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-gray-400 hover:text-white transition-all">
+                  {{ timeRangeLabel() }}
+                  <mat-icon class="text-sm">expand_more</mat-icon>
+                </button>
+                @if (isTimeSelectorOpen()) {
+                  <div class="absolute right-0 mt-2 w-64 bg-[#020617] border border-white/10 rounded-xl shadow-xl z-50 p-4 space-y-2">
+                    <button (click)="setTimeRange('30d')" class="w-full text-left text-sm p-2 hover:bg-white/5 rounded-lg">Last 30 days</button>
+                    <button (click)="setTimeRange('7d')" class="w-full text-left text-sm p-2 hover:bg-white/5 rounded-lg">Last 7 days</button>
+                    <button (click)="setTimeRange('90d')" class="w-full text-left text-sm p-2 hover:bg-white/5 rounded-lg">Last 90 days</button>
+                  </div>
+                }
+              </div>
             </div>
             <div #chartContainer class="chart-container"></div>
           </div>
@@ -584,45 +595,6 @@
         </div>
       }
 
-      <!-- Section: Account Settings -->
-      @if (currentSection() === 'account-settings') {
-        <div class="max-w-xl mx-auto space-y-8">
-          <div class="bg-white/5 border border-white/5 rounded-2xl p-8 space-y-8">
-            <h2 class="text-2xl font-bold">Account Settings</h2>
-            
-            <div class="space-y-4">
-              <label for="profile-pic" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Profile Picture</label>
-              <div class="flex items-center gap-6">
-                <div class="w-24 h-24 rounded-full bg-white/10 border border-white/10 flex items-center justify-center overflow-hidden">
-                  @if (profilePreviewUrl()) {
-                    <img [src]="profilePreviewUrl()" alt="Profile Preview" class="w-full h-full object-cover" referrerpolicy="no-referrer">
-                  } @else {
-                    <mat-icon class="text-4xl text-gray-500">person</mat-icon>
-                  }
-                </div>
-                <div class="space-y-2">
-                  <input id="profile-pic" type="file" (change)="onFileSelected($event)" accept="image/*" class="hidden" #fileInput>
-                  <button (click)="fileInput.click()" class="flex items-center gap-2 px-4 py-2 bg-[#38BDF8] text-[#020617] rounded-xl font-bold hover:bg-[#38BDF8]/90 transition-all">
-                    <mat-icon>upload</mat-icon>
-                    Upload Photo
-                  </button>
-                  <p class="text-[10px] text-gray-500">Max size: 10MB</p>
-                </div>
-              </div>
-            </div>
-            
-            <button (click)="saveProfile()" [disabled]="isSavingProfile() || !selectedFile" class="w-full py-3 bg-[#38BDF8] text-[#020617] rounded-xl font-bold hover:bg-[#38BDF8]/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
-              @if (isSavingProfile()) {
-                <mat-icon class="animate-spin">refresh</mat-icon>
-                Saving...
-              } @else {
-                <mat-icon>save</mat-icon>
-                Save Changes
-              }
-            </button>
-          </div>
-        </div>
-      }
 
       <!-- Section: Change Password -->
       @if (currentSection() === 'change-password') {
@@ -938,7 +910,7 @@
                 <div class="flex flex-wrap gap-4 items-end">
                   <label for="ticket-file" class="cursor-pointer group">
                     <span class="sr-only">Attach Image</span>
-                    <input id="ticket-file" type="file" class="hidden" (change)="onFileSelected($event)" accept="image/*">
+                    <input id="ticket-file" type="file" class="hidden" (change)="onTicketFileSelected($event)" accept="image/*">
                     <div class="flex items-center gap-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-[#38BDF8]/30 transition-all">
                       <mat-icon class="text-gray-400 group-hover:text-[#38BDF8]">attach_file</mat-icon>
                       <span class="text-sm text-gray-400 group-hover:text-white">Attach Image</span>
@@ -1038,7 +1010,7 @@
                         
                         <div class="flex gap-2">
                           <label class="cursor-pointer">
-                            <input type="file" class="hidden" (change)="onFileSelected($event)" accept="image/*">
+                            <input type="file" class="hidden" (change)="onTicketFileSelected($event)" accept="image/*">
                             <div class="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all">
                               <mat-icon class="text-gray-400">add_a_photo</mat-icon>
                             </div>
