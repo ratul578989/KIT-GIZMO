@@ -1,0 +1,655 @@
+<div class="min-h-screen bg-[#020617] text-white font-sans flex flex-col md:flex-row relative overflow-hidden">
+  <!-- Mobile Sidebar Overlay -->
+  @if (isSidebarOpen()) {
+    <div 
+      class="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm transition-opacity"
+      (click)="toggleSidebar()"
+      (keyup.escape)="toggleSidebar()"
+      tabindex="0"
+      role="button"
+      aria-label="Close sidebar"
+    ></div>
+  }
+
+  <!-- Sidebar -->
+  <aside 
+    [class]="'fixed inset-y-0 left-0 z-50 w-72 bg-[#020617] border-r border-white/5 flex flex-col transition-transform duration-300 md:relative md:translate-x-0 ' + (isSidebarOpen() ? 'translate-x-0' : '-translate-x-full')"
+  >
+    <div class="p-6 flex items-center justify-between border-b border-white/5">
+      <div class="text-2xl font-bold tracking-tighter text-[#38BDF8]">KIT GIZMO</div>
+      <button (click)="toggleSidebar()" class="md:hidden text-gray-400 hover:text-white">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    
+    <nav class="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar">
+      <!-- Dashboard -->
+      <button 
+        (click)="setSection('overview')" 
+        [class]="'w-full flex items-center gap-3 p-3 rounded-xl font-medium transition-all ' + (currentSection() === 'overview' ? 'bg-[#38BDF8] text-[#020617]' : 'text-gray-400 hover:bg-white/5 hover:text-white')"
+      >
+        <mat-icon class="text-xl">dashboard</mat-icon>
+        <span class="flex-1 text-left">Dashboard</span>
+      </button>
+
+      <!-- Manage Orders -->
+      <div class="space-y-1">
+        <button 
+          (click)="toggleSubMenu('orders')"
+          class="w-full flex items-center gap-3 p-3 rounded-xl font-medium text-gray-400 hover:bg-white/5 hover:text-white transition-all"
+        >
+          <mat-icon class="text-xl">shopping_cart</mat-icon>
+          <span class="flex-1 text-left">Manage Orders</span>
+          <mat-icon [class]="'text-sm transition-transform ' + (expandedMenus()['orders'] ? 'rotate-180' : '')">expand_more</mat-icon>
+        </button>
+        @if (expandedMenus()['orders']) {
+          <div class="pl-10 space-y-1">
+            <button (click)="setSection('new-order')" class="w-full text-left p-2 text-sm text-gray-500 hover:text-[#38BDF8] transition-colors">New Order</button>
+            <button (click)="setSection('order-history')" class="w-full text-left p-2 text-sm text-gray-500 hover:text-[#38BDF8] transition-colors">Order Log</button>
+          </div>
+        }
+      </div>
+
+      <!-- Dripfeed -->
+      <div class="space-y-1">
+        <button 
+          (click)="toggleSubMenu('dripfeed')"
+          class="w-full flex items-center gap-3 p-3 rounded-xl font-medium text-gray-400 hover:bg-white/5 hover:text-white transition-all"
+        >
+          <mat-icon class="text-xl">opacity</mat-icon>
+          <span class="flex-1 text-left">Dripfeed</span>
+          <mat-icon [class]="'text-sm transition-transform ' + (expandedMenus()['dripfeed'] ? 'rotate-180' : '')">expand_more</mat-icon>
+        </button>
+        @if (expandedMenus()['dripfeed']) {
+          <div class="pl-10 space-y-1">
+            <button class="w-full text-left p-2 text-sm text-gray-500 hover:text-[#38BDF8] transition-colors">Dripfeed Log</button>
+          </div>
+        }
+      </div>
+
+      <!-- Refills -->
+      <button class="w-full flex items-center gap-3 p-3 rounded-xl font-medium text-gray-400 hover:bg-white/5 hover:text-white transition-all">
+        <mat-icon class="text-xl">refresh</mat-icon>
+        <span class="flex-1 text-left">Refills</span>
+      </button>
+
+      <!-- Manage Deposit -->
+      <div class="space-y-1">
+        <button 
+          (click)="toggleSubMenu('deposit')"
+          class="w-full flex items-center gap-3 p-3 rounded-xl font-medium text-gray-400 hover:bg-white/5 hover:text-white transition-all"
+        >
+          <mat-icon class="text-xl">account_balance_wallet</mat-icon>
+          <span class="flex-1 text-left">Manage Deposit</span>
+          <mat-icon [class]="'text-sm transition-transform ' + (expandedMenus()['deposit'] ? 'rotate-180' : '')">expand_more</mat-icon>
+        </button>
+        @if (expandedMenus()['deposit']) {
+          <div class="pl-10 space-y-1">
+            <button (click)="setSection('add-funds')" class="w-full text-left p-2 text-sm text-gray-500 hover:text-[#38BDF8] transition-colors">Add Funds</button>
+            <button class="w-full text-left p-2 text-sm text-gray-500 hover:text-[#38BDF8] transition-colors">Deposit Log</button>
+          </div>
+        }
+      </div>
+
+      <!-- Transactions -->
+      <button class="w-full flex items-center gap-3 p-3 rounded-xl font-medium text-gray-400 hover:bg-white/5 hover:text-white transition-all">
+        <mat-icon class="text-xl">swap_horiz</mat-icon>
+        <span class="flex-1 text-left">Transactions</span>
+      </button>
+
+      <!-- My Referrals -->
+      <button class="w-full flex items-center gap-3 p-3 rounded-xl font-medium text-gray-400 hover:bg-white/5 hover:text-white transition-all">
+        <mat-icon class="text-xl">group_add</mat-icon>
+        <span class="flex-1 text-left">My Referrals</span>
+      </button>
+
+      <!-- Favorite Services -->
+      <button class="w-full flex items-center gap-3 p-3 rounded-xl font-medium text-gray-400 hover:bg-white/5 hover:text-white transition-all">
+        <mat-icon class="text-xl">star</mat-icon>
+        <span class="flex-1 text-left">Favorite Services</span>
+      </button>
+
+      <!-- Support Ticket -->
+      <button 
+        (click)="setSection('support')"
+        class="w-full flex items-center gap-3 p-3 rounded-xl font-medium text-gray-400 hover:bg-white/5 hover:text-white transition-all"
+      >
+        <mat-icon class="text-xl">confirmation_number</mat-icon>
+        <span class="flex-1 text-left">Support Ticket</span>
+      </button>
+
+      <!-- Manage Profile -->
+      <div class="space-y-1">
+        <button 
+          (click)="toggleSubMenu('profile')"
+          class="w-full flex items-center gap-3 p-3 rounded-xl font-medium text-gray-400 hover:bg-white/5 hover:text-white transition-all"
+        >
+          <mat-icon class="text-xl">person</mat-icon>
+          <span class="flex-1 text-left">Manage Profile</span>
+          <mat-icon [class]="'text-sm transition-transform ' + (expandedMenus()['profile'] ? 'rotate-180' : '')">expand_more</mat-icon>
+        </button>
+        @if (expandedMenus()['profile']) {
+          <div class="pl-10 space-y-1">
+            <button class="w-full text-left p-2 text-sm text-gray-500 hover:text-[#38BDF8] transition-colors">Account Settings</button>
+            <button class="w-full text-left p-2 text-sm text-gray-500 hover:text-[#38BDF8] transition-colors">Change Password</button>
+          </div>
+        }
+      </div>
+
+      <!-- API -->
+      <button class="w-full flex items-center gap-3 p-3 rounded-xl font-medium text-gray-400 hover:bg-white/5 hover:text-white transition-all">
+        <mat-icon class="text-xl">code</mat-icon>
+        <span class="flex-1 text-left">API</span>
+      </button>
+
+      <!-- Admin Panel -->
+      @if (isAdmin()) {
+        <a routerLink="/admin" class="w-full flex items-center gap-3 p-3 rounded-xl font-medium text-[#38BDF8] bg-[#38BDF8]/10 hover:bg-[#38BDF8]/20 transition-all">
+          <mat-icon class="text-xl">admin_panel_settings</mat-icon>
+          <span class="flex-1 text-left">Admin Panel</span>
+        </a>
+      }
+
+      <!-- Logout -->
+      <button (click)="logout()" class="w-full flex items-center gap-3 p-3 rounded-xl font-medium text-red-400 hover:bg-red-500/10 transition-all">
+        <mat-icon class="text-xl">logout</mat-icon>
+        <span class="flex-1 text-left">Logout</span>
+      </button>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 overflow-y-auto bg-[#020617]">
+    <!-- Top Nav -->
+    <header class="h-20 border-b border-white/5 flex items-center justify-between px-6 md:px-8 bg-[#020617]/80 backdrop-blur-xl sticky top-0 z-30">
+      <div class="flex items-center gap-4">
+        <button (click)="toggleSidebar()" class="md:hidden p-2 text-gray-400 hover:text-white">
+          <mat-icon>menu</mat-icon>
+        </button>
+        <div class="text-xl font-bold tracking-tighter md:hidden">KIT GIZMO</div>
+        <h1 class="text-lg font-medium text-gray-400 hidden md:block">Welcome back, {{ (userProfile()?.fullName || 'User').split(' ')[0] }}!</h1>
+      </div>
+
+      <div class="flex items-center gap-4 md:gap-6">
+        <div class="hidden sm:flex items-center gap-3 px-4 py-2 bg-white/5 rounded-full border border-white/5">
+          <mat-icon class="text-[#38BDF8] text-sm">account_balance_wallet</mat-icon>
+          <span class="text-sm font-bold">${{ stats().balance | number:'1.2-2' }}</span>
+        </div>
+        
+        <div class="h-8 w-px bg-white/5 hidden md:block"></div>
+        
+        <div class="flex items-center gap-3">
+          <div class="text-right hidden sm:block">
+            <div class="text-sm font-bold">{{ userProfile()?.fullName || 'User' }}</div>
+            <div class="text-[10px] text-gray-500 uppercase tracking-widest">{{ userProfile()?.role || 'Member' }}</div>
+          </div>
+          <div class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[#38BDF8] font-bold">
+            {{ (userProfile()?.fullName?.toString() || 'U').charAt(0).toUpperCase() }}
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <div class="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
+      <!-- Email Verification Reminder -->
+      @if (!isEmailVerified()) {
+        <div class="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+              <mat-icon class="text-amber-500">warning</mat-icon>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-amber-500">Email Verification Required</h3>
+              <p class="text-gray-400 text-sm">Please verify your email address to unlock all features, including placing orders and adding funds.</p>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <button 
+              (click)="resendVerification()" 
+              [disabled]="isResendingVerification()"
+              class="flex-1 md:flex-none px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
+            >
+              {{ isResendingVerification() ? 'Sending...' : 'Resend Email' }}
+            </button>
+            <button 
+              (click)="checkVerification()" 
+              class="flex-1 md:flex-none px-6 py-3 bg-amber-500 text-[#020617] rounded-xl text-sm font-bold hover:bg-amber-400 transition-all"
+            >
+              I've Verified
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Section: Overview -->
+      @if (currentSection() === 'overview') {
+        <!-- Stat Cards Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+          <!-- Balance -->
+          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+            <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">wallet</mat-icon>
+            </div>
+            <div>
+              <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Balance</div>
+              <div class="text-xl font-bold text-[#38BDF8]">${{ stats().balance | number:'1.2-2' }}</div>
+            </div>
+          </div>
+
+          <!-- Total Spent -->
+          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+            <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">credit_card</mat-icon>
+            </div>
+            <div>
+              <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Total Spent</div>
+              <div class="text-xl font-bold">${{ stats().totalSpent | number:'1.2-2' }}</div>
+            </div>
+          </div>
+
+          <!-- Transactions -->
+          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+            <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">swap_horiz</mat-icon>
+            </div>
+            <div>
+              <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Transactions</div>
+              <div class="text-xl font-bold">{{ stats().transactions }}</div>
+            </div>
+          </div>
+
+          <!-- Total Deposit -->
+          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+            <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">account_balance</mat-icon>
+            </div>
+            <div>
+              <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Total Deposit</div>
+              <div class="text-xl font-bold">${{ stats().totalDeposit | number:'1.2-2' }}</div>
+            </div>
+          </div>
+
+          <!-- Total Ticket -->
+          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+            <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">confirmation_number</mat-icon>
+            </div>
+            <div>
+              <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Total Ticket</div>
+              <div class="text-xl font-bold">{{ stats().totalTicket }}</div>
+            </div>
+          </div>
+
+          <!-- Total Order -->
+          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+            <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">shopping_cart</mat-icon>
+            </div>
+            <div>
+              <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Total Order</div>
+              <div class="text-xl font-bold">{{ stats().totalOrder }}</div>
+            </div>
+          </div>
+
+          <!-- Pending Order -->
+          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+            <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">hourglass_empty</mat-icon>
+            </div>
+            <div>
+              <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Pending Order</div>
+              <div class="text-xl font-bold">{{ stats().pendingOrder }}</div>
+            </div>
+          </div>
+
+          <!-- Processing Order -->
+          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+            <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">sync</mat-icon>
+            </div>
+            <div>
+              <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Processing Order</div>
+              <div class="text-xl font-bold">{{ stats().processingOrder }}</div>
+            </div>
+          </div>
+
+          <!-- Completed Order -->
+          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+            <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">check_circle</mat-icon>
+            </div>
+            <div>
+              <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Completed Order</div>
+              <div class="text-xl font-bold">{{ stats().completedOrder }}</div>
+            </div>
+          </div>
+
+          <!-- Refund Order -->
+          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+            <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">settings_backup_restore</mat-icon>
+            </div>
+            <div>
+              <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Refund Order</div>
+              <div class="text-xl font-bold">{{ stats().refundOrder }}</div>
+            </div>
+          </div>
+
+          <!-- Cancelled Order -->
+          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+            <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">cancel</mat-icon>
+            </div>
+            <div>
+              <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Cancelled Order</div>
+              <div class="text-xl font-bold">{{ stats().cancelledOrder }}</div>
+            </div>
+          </div>
+
+          <!-- Total Dripfeeds -->
+          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+            <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">opacity</mat-icon>
+            </div>
+            <div>
+              <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Total Dripfeeds</div>
+              <div class="text-xl font-bold">{{ stats().totalDripfeeds }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Quick Order Form -->
+          <div class="lg:col-span-1 bg-white/5 border border-white/5 rounded-2xl p-6 space-y-6">
+            <div class="flex items-center gap-2 mb-2">
+              <mat-icon class="text-[#38BDF8]">add_circle</mat-icon>
+              <h2 class="text-lg font-bold">Quick Order</h2>
+            </div>
+            <p class="text-sm text-gray-500 leading-relaxed">Select a service and start growing your presence instantly with our AI-driven solutions.</p>
+            <button (click)="setSection('new-order')" class="w-full py-4 bg-[#38BDF8] text-[#020617] font-bold rounded-xl hover:bg-[#38BDF8]/90 transition-all shadow-lg shadow-[#38BDF8]/20">
+              New Order Form
+            </button>
+          </div>
+
+          <!-- Stats Graph -->
+          <div class="lg:col-span-2 bg-white/5 border border-white/5 rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-6">
+              <div class="flex items-center gap-2">
+                <mat-icon class="text-[#38BDF8]">insights</mat-icon>
+                <h2 class="text-lg font-bold">Order Statistics</h2>
+              </div>
+              <div class="text-[10px] text-gray-500 uppercase tracking-widest">Last 7 Days</div>
+            </div>
+            <div #chartContainer class="chart-container"></div>
+          </div>
+        </div>
+
+        <!-- Recent Orders Table -->
+        <div class="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+          <div class="p-6 border-b border-white/10 flex items-center justify-between">
+            <h2 class="text-lg font-bold">Recent Orders</h2>
+            <button (click)="setSection('order-history')" class="text-sm text-[#38BDF8] hover:underline">View All</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-white/5 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                  <th class="px-6 py-4">ID</th>
+                  <th class="px-6 py-4">Service</th>
+                  <th class="px-6 py-4">Quantity</th>
+                  <th class="px-6 py-4">Charge</th>
+                  <th class="px-6 py-4">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/5">
+                @for (order of orders().slice(0, 5); track order.id) {
+                  <tr class="hover:bg-white/5 transition-colors">
+                    <td class="px-6 py-4 text-xs font-mono text-gray-500">#{{ order.id.slice(-6) }}</td>
+                    <td class="px-6 py-4 text-sm font-medium">{{ order.service }}</td>
+                    <td class="px-6 py-4 text-sm">{{ order.quantity | number }}</td>
+                    <td class="px-6 py-4 text-sm font-bold text-[#38BDF8]">${{ order.charge | number:'1.2-2' }}</td>
+                    <td class="px-6 py-4">
+                      <span [class]="'px-2 py-1 rounded-md text-[10px] font-bold uppercase ' + 
+                        (order.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400' : 
+                         order.status === 'pending' ? 'bg-amber-500/10 text-amber-400' : 
+                         'bg-blue-500/10 text-blue-400')">
+                        {{ order.status }}
+                      </span>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-gray-500">No orders found.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+
+      <!-- Section: New Order -->
+      @if (currentSection() === 'new-order') {
+        <div class="max-w-2xl mx-auto bg-white/5 border border-white/5 rounded-2xl p-8 space-y-8">
+          <div>
+            <h2 class="text-2xl font-bold mb-1">New Order</h2>
+            <p class="text-gray-500 text-sm">Select a service to start growing your presence.</p>
+          </div>
+
+          @if (orderMessage()) {
+            <div [class]="'p-4 rounded-xl text-sm ' + (orderMessage()?.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20')">
+              {{ orderMessage()?.text }}
+            </div>
+          }
+
+          <div class="space-y-6">
+            <div class="space-y-2">
+              <label for="cat-select" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Select Category</label>
+              <select 
+                id="cat-select"
+                [(ngModel)]="selectedCategory" 
+                (change)="onCategoryChange()"
+                class="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 focus:border-[#38BDF8] outline-none transition-all appearance-none"
+              >
+                <option value="" disabled>Choose Category</option>
+                @for (cat of categories; track cat.id) {
+                  <option [value]="cat.id" class="bg-[#020617]">{{ cat.name }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="space-y-2">
+              <label for="srv-select" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Select Service</label>
+              <select 
+                id="srv-select"
+                [(ngModel)]="selectedService" 
+                (change)="calculateCharge()"
+                class="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 focus:border-[#38BDF8] outline-none transition-all appearance-none"
+                [disabled]="!selectedCategory"
+              >
+                <option [ngValue]="null" disabled>Choose Service</option>
+                @for (srv of services[selectedCategory]; track srv.id) {
+                  <option [ngValue]="srv" class="bg-[#020617]">{{ srv.name }} - ${{ srv.rate }}/1k</option>
+                }
+              </select>
+            </div>
+
+            <div class="space-y-2">
+              <label for="link-input" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Link</label>
+              <input 
+                id="link-input"
+                type="text" 
+                [(ngModel)]="orderLink"
+                placeholder="https://example.com/profile"
+                class="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 focus:border-[#38BDF8] outline-none transition-all"
+              >
+            </div>
+
+            <div class="space-y-2">
+              <label for="qty-input" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Quantity</label>
+              <input 
+                id="qty-input"
+                type="number" 
+                [(ngModel)]="orderQuantity"
+                (input)="calculateCharge()"
+                min="500"
+                class="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 focus:border-[#38BDF8] outline-none transition-all"
+              >
+            </div>
+
+            <div class="pt-6 border-t border-white/5">
+              <div class="flex justify-between items-center mb-6">
+                <span class="text-gray-500 font-medium">Charge:</span>
+                <span class="text-2xl font-bold text-[#38BDF8]">${{ totalCharge | number:'1.2-2' }}</span>
+              </div>
+              <button 
+                (click)="placeOrder()"
+                [disabled]="isPlacingOrder() || !selectedService || !orderLink || orderQuantity < 500 || !isEmailVerified()"
+                class="w-full py-5 bg-[#38BDF8] text-[#020617] font-bold rounded-xl hover:bg-[#38BDF8]/90 transition-all disabled:opacity-50 text-lg shadow-lg shadow-[#38BDF8]/20"
+              >
+                {{ isPlacingOrder() ? 'Processing...' : 'Place Order' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Section: Add Funds -->
+      @if (currentSection() === 'add-funds') {
+        <div class="max-w-2xl mx-auto bg-white/5 border border-white/5 rounded-2xl p-8 space-y-8">
+          <div>
+            <h2 class="text-2xl font-bold mb-1">Add Funds</h2>
+            <p class="text-gray-500 text-sm">Deposit funds to your wallet instantly.</p>
+          </div>
+
+          <div class="space-y-6">
+            <div class="p-6 bg-[#38BDF8]/5 border border-[#38BDF8]/10 rounded-2xl flex items-center justify-between">
+              <div>
+                <div class="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1">Current Balance</div>
+                <div class="text-3xl font-bold text-[#38BDF8]">${{ (userProfile()?.balance || 0) | number:'1.2-2' }}</div>
+              </div>
+              <mat-icon class="text-[#38BDF8] opacity-20 text-4xl h-auto w-auto">account_balance_wallet</mat-icon>
+            </div>
+
+            <div class="space-y-2">
+              <label for="dep-amount" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Amount ($)</label>
+              <input 
+                id="dep-amount"
+                type="number" 
+                [(ngModel)]="depositAmount"
+                min="1"
+                class="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 focus:border-[#38BDF8] outline-none transition-all"
+              >
+            </div>
+
+            <div class="space-y-2">
+              <label for="trans-id" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Transaction ID (USDT/TRC20)</label>
+              <input 
+                id="trans-id"
+                type="text" 
+                [(ngModel)]="transactionId"
+                placeholder="Enter your USDT/TRC20 Transaction ID"
+                class="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 focus:border-[#38BDF8] outline-none transition-all"
+              >
+            </div>
+
+            <button 
+              (click)="deposit()"
+              [disabled]="isDepositing() || depositAmount <= 0 || !transactionId || !isEmailVerified()"
+              class="w-full py-5 bg-[#38BDF8] text-[#020617] font-bold rounded-xl hover:bg-[#38BDF8]/90 transition-all disabled:opacity-50 text-lg shadow-lg shadow-[#38BDF8]/20"
+            >
+              {{ isDepositing() ? 'Submitting...' : 'Submit Deposit Request' }}
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Section: Services -->
+      @if (currentSection() === 'services') {
+        <div class="bg-white/5 border border-white/5 rounded-2xl overflow-hidden">
+          <div class="p-8 border-b border-white/5">
+            <h2 class="text-2xl font-bold">Our Services</h2>
+            <p class="text-gray-500 text-sm">Browse our full list of high-performance growth services.</p>
+          </div>
+          <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            @for (cat of categories; track cat.id) {
+              <div class="space-y-4">
+                <h3 class="text-[#38BDF8] font-bold uppercase tracking-widest text-xs">{{ cat.name }}</h3>
+                <div class="space-y-2">
+                  @for (srv of services[cat.id]; track srv.id) {
+                    <div class="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 hover:border-[#38BDF8]/30 transition-all">
+                      <span class="text-sm">{{ srv.name }}</span>
+                      <span class="text-sm font-bold text-[#38BDF8]">${{ srv.rate }}/1k</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Section: Support -->
+      @if (currentSection() === 'support') {
+        <div class="max-w-2xl mx-auto space-y-8">
+          <div class="bg-white/5 border border-white/5 rounded-2xl p-8 text-center space-y-6">
+            <mat-icon class="text-6xl text-[#38BDF8] opacity-20">support_agent</mat-icon>
+            <h2 class="text-2xl font-bold">Need Help?</h2>
+            <p class="text-gray-500 leading-relaxed">Our support team is available 24/7 to assist you with any questions or issues regarding your orders.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="p-4 bg-white/5 rounded-xl border border-white/5">
+                <div class="text-[10px] font-bold text-gray-500 uppercase mb-1">Email Support</div>
+                <div class="text-sm">support@kitgizmo.com</div>
+              </div>
+              <div class="p-4 bg-white/5 rounded-xl border border-white/5">
+                <div class="text-[10px] font-bold text-gray-500 uppercase mb-1">Response Time</div>
+                <div class="text-sm">Under 12 Hours</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white/5 border border-white/5 rounded-2xl p-8 space-y-6">
+            <h3 class="text-xl font-bold">Open a Ticket</h3>
+            
+            @if (orderMessage()) {
+              <div [class]="'p-4 rounded-xl text-sm ' + (orderMessage()?.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20')">
+                {{ orderMessage()?.text }}
+              </div>
+            }
+
+            <div class="space-y-4">
+              <div class="space-y-2">
+                <label for="ticket-subject" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Subject</label>
+                <input 
+                  id="ticket-subject"
+                  type="text" 
+                  [(ngModel)]="ticketSubject"
+                  placeholder="Order Issue, Payment, etc."
+                  class="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 focus:border-[#38BDF8] outline-none transition-all"
+                >
+              </div>
+              <div class="space-y-2">
+                <label for="ticket-message" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Message</label>
+                <textarea 
+                  id="ticket-message"
+                  [(ngModel)]="ticketMessage"
+                  rows="4"
+                  placeholder="Describe your issue in detail..."
+                  class="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 focus:border-[#38BDF8] outline-none transition-all resize-none"
+                ></textarea>
+              </div>
+              <button 
+                (click)="submitTicket()"
+                [disabled]="isSubmittingTicket() || !ticketSubject || !ticketMessage"
+                class="w-full py-4 bg-[#38BDF8] text-[#020617] font-bold rounded-xl hover:bg-[#38BDF8]/90 transition-all disabled:opacity-50"
+              >
+                {{ isSubmittingTicket() ? 'Submitting...' : 'Submit Ticket' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </main>
+</div>

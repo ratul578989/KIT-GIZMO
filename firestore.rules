@@ -1,59 +1,62 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: users
-    // Document ID: {userId} (matches request.auth.uid)
-    // Fields:
-    //   - uid: string (required)
-    //   - fullName: string (required, 2-100 chars)
-    //   - email: string (required, valid email)
-    //   - role: string (required, 'admin' or 'user')
-    //   - createdAt: timestamp (required)
-    //
-    // ===============================================================
-
-    // ===============================================================
-    // Helper Functions
-    // ===============================================================
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
     function isAdmin() {
-      return isAuthenticated() &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-          (request.auth.token.email == "info.kitgizmo@gmail.com" && request.auth.token.email_verified == true));
+      return isAuthenticated() && 
+             (request.auth.token.email == "info.kitgizmo@gmail.com");
     }
 
     function isValidUser(data) {
-      return data.keys().hasAll(['uid', 'fullName', 'email', 'role', 'createdAt']) &&
+      return data.keys().hasAll(['uid', 'fullName', 'email', 'role', 'status', 'balance', 'totalSpent', 'createdAt']) &&
              data.uid == request.auth.uid &&
-             data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 100 &&
-             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
+             data.fullName is string && data.fullName.size() <= 100 &&
+             data.email is string &&
              data.role in ['admin', 'user'] &&
+             data.status in ['active', 'suspended'] &&
+             data.balance is number && data.balance >= 0 &&
+             data.totalSpent is number && data.totalSpent >= 0 &&
              data.createdAt is timestamp;
     }
 
+    function isValidOrder(data) {
+      return data.keys().hasAll(['id', 'userId', 'category', 'service', 'link', 'quantity', 'charge', 'status', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.quantity >= 500 && data.quantity <= 10000 &&
+             data.charge is number && data.charge >= 0 &&
+             data.status in ['pending', 'processing', 'completed', 'cancelled'] &&
+             data.createdAt is timestamp;
+    }
+
+    function isEmailVerified() {
+      return isAuthenticated() && request.auth.token.email_verified == true;
+    }
+
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      
-      allow create: if isAuthenticated() && 
-                      isOwner(userId) && 
-                      isValidUser(request.resource.data) &&
-                      (request.resource.data.role == 'user' || isAdmin());
-                      
-      allow update: if isAuthenticated() && 
-                      isOwner(userId) && 
-                      isValidUser(request.resource.data) &&
-                      request.resource.data.role == resource.data.role; // Cannot change own role
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == userId && isValidUser(request.resource.data);
+      allow update: if isEmailVerified() && request.auth.uid == userId && isValidUser(request.resource.data);
+    }
+
+    match /orders/{orderId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isEmailVerified() && isValidOrder(request.resource.data);
+      allow update: if isAdmin();
+    }
+
+    match /deposits/{depositId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isEmailVerified() && request.resource.data.userId == request.auth.uid && request.resource.data.status == 'pending';
+      allow update: if isAdmin();
+    }
+
+    match /tickets/{ticketId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isEmailVerified() && request.resource.data.userId == request.auth.uid && request.resource.data.status == 'open';
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
   }
 }

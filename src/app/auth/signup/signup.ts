@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { auth, db } from '../../../firebase';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 @Component({
@@ -23,6 +23,12 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
           @if (errorMessage()) {
             <div class="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
               {{ errorMessage() }}
+            </div>
+          }
+
+          @if (successMessage()) {
+            <div class="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm">
+              {{ successMessage() }}
             </div>
           }
 
@@ -121,6 +127,7 @@ export class SignupComponent {
   confirmPassword = '';
   isLoading = signal(false);
   errorMessage = signal('');
+  successMessage = signal('');
 
   async onSubmit() {
     if (!this.fullName || !this.email || !this.password || !this.confirmPassword) {
@@ -140,6 +147,7 @@ export class SignupComponent {
 
     this.isLoading.set(true);
     this.errorMessage.set('');
+    this.successMessage.set('');
 
     try {
       // 1. Create Auth User
@@ -149,18 +157,28 @@ export class SignupComponent {
       // 2. Update Auth Profile
       await updateProfile(user, { displayName: this.fullName });
 
-      // 3. Create Firestore Profile
+      // 3. Send Verification Email
+      await sendEmailVerification(user);
+
+      // 4. Create Firestore Profile
       const role = this.email === 'info.kitgizmo@gmail.com' ? 'admin' : 'user';
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         fullName: this.fullName,
         email: this.email,
         role: role,
+        status: 'active',
+        balance: 0,
+        totalSpent: 0,
         createdAt: serverTimestamp()
       });
 
-      // 4. Redirect to Dashboard
-      this.router.navigate(['/dashboard']);
+      this.successMessage.set('Account created! Please check your email for a verification link.');
+      
+      // 5. Redirect to Dashboard after a short delay
+      setTimeout(() => {
+        this.router.navigate(['/dashboard']);
+      }, 3000);
     } catch (error: unknown) {
       console.error('Signup error:', error);
       const errorCode = (error as { code?: string }).code || '';

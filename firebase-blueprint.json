@@ -9,15 +9,89 @@
         "fullName": { "type": "string", "description": "User's full name" },
         "email": { "type": "string", "description": "User's email address" },
         "role": { "type": "string", "enum": ["admin", "user"], "description": "User's role" },
+        "status": { "type": "string", "enum": ["active", "suspended"], "description": "Account status" },
+        "balance": { "type": "number", "description": "User's current balance" },
+        "totalSpent": { "type": "number", "description": "Total amount spent by user" },
         "createdAt": { "type": "string", "format": "date-time", "description": "Account creation timestamp" }
       },
-      "required": ["uid", "fullName", "email", "role", "createdAt"]
+      "required": ["uid", "fullName", "email", "role", "status", "balance", "totalSpent", "createdAt"]
+    },
+    "orders": {
+      "title": "Order",
+      "description": "User order information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Order ID" },
+        "userId": { "type": "string", "description": "UID of the user who placed the order" },
+        "userEmail": { "type": "string", "description": "Email of the user" },
+        "category": { "type": "string", "description": "Order category" },
+        "service": { "type": "string", "description": "Order service" },
+        "link": { "type": "string", "description": "Target link" },
+        "quantity": { "type": "number", "description": "Number of units" },
+        "charge": { "type": "number", "description": "Total charge for the order" },
+        "status": { "type": "string", "enum": ["pending", "processing", "completed", "cancelled"], "description": "Order status" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Order creation timestamp" }
+      },
+      "required": ["id", "userId", "userEmail", "category", "service", "link", "quantity", "charge", "status", "createdAt"]
+    },
+    "deposits": {
+      "title": "Deposit Request",
+      "description": "Manual deposit request information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Request ID" },
+        "userId": { "type": "string", "description": "UID of the user" },
+        "userEmail": { "type": "string", "description": "Email of the user" },
+        "amount": { "type": "number", "description": "Deposit amount" },
+        "transactionId": { "type": "string", "description": "USDT/TRC20 Transaction ID" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "description": "Request status" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Request timestamp" }
+      },
+      "required": ["id", "userId", "userEmail", "amount", "transactionId", "status", "createdAt"]
+    },
+    "tickets": {
+      "title": "Support Ticket",
+      "description": "User support ticket",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Ticket ID" },
+        "userId": { "type": "string", "description": "UID of the user" },
+        "userEmail": { "type": "string", "description": "Email of the user" },
+        "subject": { "type": "string", "description": "Ticket subject" },
+        "message": { "type": "string", "description": "Initial message" },
+        "status": { "type": "string", "enum": ["open", "closed"], "description": "Ticket status" },
+        "replies": { 
+          "type": "array", 
+          "items": {
+            "type": "object",
+            "properties": {
+              "sender": { "type": "string", "enum": ["user", "admin"] },
+              "message": { "type": "string" },
+              "timestamp": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "userEmail", "subject", "message", "status", "createdAt"]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": "users",
       "description": "User profile document"
+    },
+    "/orders/{orderId}": {
+      "schema": "orders",
+      "description": "Order document"
+    },
+    "/deposits/{depositId}": {
+      "schema": "deposits",
+      "description": "Deposit request document"
+    },
+    "/tickets/{ticketId}": {
+      "schema": "tickets",
+      "description": "Support ticket document"
     }
   }
 }
