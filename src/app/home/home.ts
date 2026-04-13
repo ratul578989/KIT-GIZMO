@@ -1,10 +1,16 @@
-import {ChangeDetectionStrategy, Component, signal, OnInit, WritableSignal, inject, PLATFORM_ID} from '@angular/core';
+import {ChangeDetectionStrategy, Component, signal, OnInit, WritableSignal, inject, PLATFORM_ID, OnDestroy} from '@angular/core';
 import {MatIconModule} from '@angular/material/icon';
 import {CommonModule, isPlatformBrowser} from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { animate, stagger, inView } from "motion";
-import { auth } from '../../firebase';
+import { auth, db } from '../../firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
+import { doc, onSnapshot, Unsubscribe } from 'firebase/firestore';
+
+interface SiteSettings {
+  instagramUrl: string;
+  showInstagramCard: boolean;
+}
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -13,7 +19,7 @@ import { onAuthStateChanged, User } from 'firebase/auth';
   imports: [MatIconModule, CommonModule, RouterModule],
   templateUrl: './home.html',
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, OnDestroy {
   private platformId = inject(PLATFORM_ID);
   
   users = signal(0);
@@ -23,6 +29,9 @@ export class HomeComponent implements OnInit {
   
   currentUser = signal<User | null>(null);
   isAuthReady = signal(false);
+  siteSettings = signal<SiteSettings>({ instagramUrl: '', showInstagramCard: false });
+  
+  private unsubscribers: Unsubscribe[] = [];
 
   ngOnInit() {
     if (isPlatformBrowser(this.platformId)) {
@@ -30,6 +39,14 @@ export class HomeComponent implements OnInit {
         this.currentUser.set(user);
         this.isAuthReady.set(true);
       });
+
+      // Real-time Site Settings
+      const settingsUnsub = onSnapshot(doc(db, 'site_settings', 'main'), (snap) => {
+        if (snap.exists()) {
+          this.siteSettings.set(snap.data() as SiteSettings);
+        }
+      });
+      this.unsubscribers.push(settingsUnsub);
 
       // Scroll-triggered animations for Trust Stats
       inView("#trust-stats", () => {
@@ -106,5 +123,9 @@ export class HomeComponent implements OnInit {
     };
 
     requestAnimationFrame(update);
+  }
+
+  ngOnDestroy() {
+    this.unsubscribers.forEach(unsub => unsub());
   }
 }

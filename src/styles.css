@@ -8,6 +8,22 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+@layer base {
+  :root {
+    --bg-primary: #020617;
+    --bg-secondary: #0B1120;
+    --text-primary: #FFFFFF;
+    --text-secondary: #D1D5DB;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --accent-cyan: #22D3EE;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+  }
+}
+
 .glow-text {
   text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
 }

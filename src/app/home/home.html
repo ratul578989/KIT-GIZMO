@@ -2,14 +2,14 @@
   <!-- Header -->
   <header class="fixed top-0 left-0 right-0 z-50 bg-[#020617]/80 backdrop-blur-md border-b border-white/10">
     <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-      <div class="text-2xl font-bold tracking-tighter text-white">KIT GIZMO</div>
+      <div class="text-2xl font-bold tracking-tighter text-[#22D3EE]">KIT GIZMO</div>
       <div class="flex items-center gap-4">
         @if (isAuthReady()) {
           @if (currentUser()) {
-            <a routerLink="/dashboard" class="px-5 py-2.5 text-sm font-medium bg-[#38BDF8] text-[#020617] rounded-xl hover:bg-[#38BDF8]/90 transition-colors">Dashboard</a>
+            <a routerLink="/dashboard" class="px-5 py-2.5 text-sm font-bold bg-[#22D3EE] text-[#020617] rounded-xl hover:bg-[#22D3EE]/90 transition-colors">Dashboard</a>
           } @else {
-            <a routerLink="/login" class="px-5 py-2.5 text-sm font-medium text-white hover:text-[#38BDF8] transition-colors">Login</a>
-            <a routerLink="/signup" class="px-5 py-2.5 text-sm font-medium bg-[#38BDF8] text-[#020617] rounded-xl hover:bg-[#38BDF8]/90 transition-colors">Sign Up</a>
+            <a routerLink="/login" class="px-5 py-2.5 text-sm font-medium text-gray-300 hover:text-[#22D3EE] transition-colors">Login</a>
+            <a routerLink="/signup" class="px-5 py-2.5 text-sm font-bold bg-[#22D3EE] text-[#020617] rounded-xl hover:bg-[#22D3EE]/90 transition-colors">Sign Up</a>
           }
         }
       </div>
@@ -19,47 +19,83 @@
   <!-- Hero -->
   <section class="relative pt-32 pb-20 px-6 overflow-hidden">
     <div class="absolute inset-0 z-0 opacity-20">
-      <div class="absolute -top-24 -left-24 w-96 h-96 bg-[#38BDF8] rounded-full blur-[128px] animate-pulse"></div>
-      <div class="absolute bottom-0 right-0 w-96 h-96 bg-[#38BDF8] rounded-full blur-[128px] animate-pulse delay-1000"></div>
+      <div class="absolute -top-24 -left-24 w-96 h-96 bg-[#22D3EE] rounded-full blur-[128px] animate-pulse"></div>
+      <div class="absolute bottom-0 right-0 w-96 h-96 bg-[#22D3EE] rounded-full blur-[128px] animate-pulse delay-1000"></div>
     </div>
     <div class="relative z-10 max-w-5xl mx-auto text-center">
-      <h1 class="text-5xl md:text-7xl font-bold tracking-tight mb-6">Elevate Your Social Media Presence instantly with KIT GIZMO</h1>
+      <h1 class="text-5xl md:text-7xl font-bold tracking-tight mb-6 text-white">Elevate Your Social Media Presence instantly with KIT GIZMO</h1>
       <p class="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">Empowering your digital success with high-impact traffic and data-driven strategies.</p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a routerLink="/signup" class="px-8 py-4 bg-[#38BDF8] text-[#020617] rounded-xl font-semibold hover:bg-[#38BDF8]/90 transition-colors text-center">Start Your Growth Now →</a>
-        <button class="px-8 py-4 bg-white/5 text-white rounded-xl font-semibold hover:bg-white/10 transition-colors">View Our Premium Services</button>
+        <a routerLink="/signup" class="px-8 py-4 bg-[#22D3EE] text-[#020617] rounded-xl font-bold hover:bg-[#22D3EE]/90 transition-colors text-center">Start Your Growth Now →</a>
+        <button class="px-8 py-4 bg-white/5 text-white border border-[#22D3EE]/30 rounded-xl font-bold hover:bg-white/10 transition-colors">View Our Premium Services</button>
       </div>
+
+      <!-- Instagram Trust Card -->
+      @if (siteSettings().showInstagramCard && siteSettings().instagramUrl) {
+        <div class="mt-12 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-1000">
+          <div class="group relative bg-[#0B1120] border border-white/10 rounded-3xl p-8 transition-all duration-500 hover:-translate-y-2 hover:border-[#22D3EE]/50 hover:shadow-[0_0_30px_rgba(34,211,238,0.15)]">
+            <!-- Neon Glow Effect -->
+            <div class="absolute -inset-0.5 bg-gradient-to-r from-[#E1306C] via-[#833AB4] to-[#405DE6] rounded-3xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500"></div>
+            
+            <div class="relative flex flex-col items-center text-center space-y-6">
+              <!-- Instagram Logo Gradient -->
+              <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#FFDC80] via-[#F56040] to-[#833AB4] flex items-center justify-center shadow-2xl shadow-purple-500/20 transform group-hover:scale-110 transition-transform duration-500">
+                <i class="fab fa-instagram text-white text-4xl"></i>
+              </div>
+              
+              <div class="space-y-2">
+                <h3 class="text-xl md:text-2xl font-bold text-white">
+                  Verified Instagram Community: <span class="text-[#22D3EE]">Follow us @kitgizmo1!</span>
+                </h3>
+                <p class="text-gray-400">
+                  Join our growing family of <span class="text-white font-black">11K+ Followers</span> and get exclusive updates!
+                </p>
+              </div>
+
+              <a 
+                [href]="siteSettings().instagramUrl" 
+                target="_blank" 
+                class="inline-flex items-center gap-2 px-10 py-4 bg-[#22D3EE] text-[#020617] font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-all duration-300 shadow-xl shadow-[#22D3EE]/20"
+              >
+                Follow on Instagram
+                <mat-icon class="text-sm">open_in_new</mat-icon>
+              </a>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   </section>
 
   <!-- Trust Stats -->
-  <section id="trust-stats" class="py-20 bg-[#0F172A]">
+  <section id="trust-stats" class="py-20 bg-[#0B1120]">
     <div class="max-w-7xl mx-auto px-6">
-      <h2 class="text-3xl font-bold text-center mb-16 opacity-0">Trusted by Thousands of Creators and Brands Worldwide</h2>
+      <h2 class="text-3xl font-bold text-center mb-16 opacity-0 text-white">Trusted by Thousands of Creators and Brands Worldwide</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div class="trust-card bg-[#020617] p-8 rounded-2xl border border-white/5 opacity-0">
-          <mat-icon class="text-[#38BDF8] mb-4">group</mat-icon>
-          <div class="text-4xl font-bold mb-2">{{ users() | number:'1.0-0' }}+</div>
+        <div class="trust-card bg-[#1E293B] p-8 rounded-2xl border border-white/5 opacity-0 shadow-lg">
+          <mat-icon class="text-[#22D3EE] mb-4">group</mat-icon>
+          <div class="text-4xl font-bold mb-2 text-white">{{ users() | number:'1.0-0' }}+</div>
           <div class="text-gray-400">Users Trusted Us</div>
         </div>
-        <div class="trust-card bg-[#020617] p-8 rounded-2xl border border-white/5 opacity-0">
-          <mat-icon class="text-[#38BDF8] mb-4">task_alt</mat-icon>
-          <div class="text-4xl font-bold mb-2">{{ projects() | number:'1.0-0' }}+</div>
+        <div class="trust-card bg-[#1E293B] p-8 rounded-2xl border border-white/5 opacity-0 shadow-lg">
+          <mat-icon class="text-[#22D3EE] mb-4">task_alt</mat-icon>
+          <div class="text-4xl font-bold mb-2 text-white">{{ projects() | number:'1.0-0' }}+</div>
           <div class="text-gray-400">Active Projects Completed</div>
         </div>
-        <div class="trust-card bg-[#020617] p-8 rounded-2xl border border-white/5 opacity-0">
-          <mat-icon class="text-[#38BDF8] mb-4">business</mat-icon>
-          <div class="text-4xl font-bold mb-2">{{ clients() | number:'1.0-0' }}+</div>
+        <div class="trust-card bg-[#1E293B] p-8 rounded-2xl border border-white/5 opacity-0 shadow-lg">
+          <mat-icon class="text-[#22D3EE] mb-4">business</mat-icon>
+          <div class="text-4xl font-bold mb-2 text-white">{{ clients() | number:'1.0-0' }}+</div>
           <div class="text-gray-400">Business Clients</div>
         </div>
-        <div class="trust-card bg-[#020617] p-8 rounded-2xl border border-white/5 opacity-0">
-          <mat-icon class="text-[#38BDF8] mb-4">star</mat-icon>
-          <div class="text-4xl font-bold mb-2">{{ rating() }} Star</div>
+        <div class="trust-card bg-[#1E293B] p-8 rounded-2xl border border-white/5 opacity-0 shadow-lg">
+          <mat-icon class="text-[#22D3EE] mb-4">star</mat-icon>
+          <div class="text-4xl font-bold mb-2 text-white">{{ rating() }} Star</div>
           <div class="text-gray-400">Average Client Rating</div>
         </div>
       </div>
     </div>
   </section>
+>
 
   <!-- AI Performance Showcase -->
   <section id="ai-performance" class="py-32 px-6 bg-[#020617] relative overflow-hidden">

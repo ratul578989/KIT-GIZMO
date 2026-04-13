@@ -13,10 +13,10 @@
 
   <!-- Sidebar -->
   <aside 
-    [class]="'fixed inset-y-0 left-0 z-50 w-72 bg-[#020617] border-r border-white/5 flex flex-col transition-transform duration-300 md:relative md:translate-x-0 ' + (isSidebarOpen() ? 'translate-x-0' : '-translate-x-full')"
+    [class]="'fixed inset-y-0 left-0 z-50 w-72 bg-[#0B1120] border-r border-white/10 flex flex-col transition-transform duration-300 md:relative md:translate-x-0 ' + (isSidebarOpen() ? 'translate-x-0' : '-translate-x-full')"
   >
-    <div class="p-6 flex items-center justify-between border-b border-white/5">
-      <div class="text-2xl font-bold tracking-tighter text-[#38BDF8]">KIT GIZMO</div>
+    <div class="p-6 flex items-center justify-between border-b border-white/10">
+      <div class="text-2xl font-bold tracking-tighter text-[#22D3EE]">KIT GIZMO</div>
       <button (click)="toggleSidebar()" class="md:hidden text-gray-400 hover:text-white">
         <mat-icon>close</mat-icon>
       </button>
@@ -26,7 +26,7 @@
       <!-- Dashboard -->
       <button 
         (click)="setSection('overview')" 
-        [class]="'w-full flex items-center gap-3 p-3 rounded-xl font-medium transition-all ' + (currentSection() === 'overview' ? 'bg-[#38BDF8] text-[#020617]' : 'text-gray-400 hover:bg-white/5 hover:text-white')"
+        [class]="'w-full flex items-center gap-3 p-3 rounded-xl font-medium transition-all ' + (currentSection() === 'overview' ? 'bg-[#22D3EE] text-[#020617]' : 'text-gray-400 hover:bg-white/5 hover:text-white')"
       >
         <mat-icon class="text-xl">dashboard</mat-icon>
         <span class="flex-1 text-left">Dashboard</span>
@@ -44,8 +44,8 @@
         </button>
         @if (expandedMenus()['orders']) {
           <div class="pl-10 space-y-1">
-            <button (click)="setSection('new-order')" class="w-full text-left p-2 text-sm text-gray-500 hover:text-[#38BDF8] transition-colors">New Order</button>
-            <button (click)="setSection('order-history')" class="w-full text-left p-2 text-sm text-gray-500 hover:text-[#38BDF8] transition-colors">Order Log</button>
+            <button (click)="setSection('new-order')" class="w-full text-left p-2 text-sm text-gray-400 hover:text-[#22D3EE] transition-colors">New Order</button>
+            <button (click)="setSection('order-history')" class="w-full text-left p-2 text-sm text-gray-400 hover:text-[#22D3EE] transition-colors">Order Log</button>
           </div>
         }
       </div>
@@ -62,8 +62,8 @@
         </button>
         @if (expandedMenus()['deposit']) {
           <div class="pl-10 space-y-1">
-            <button (click)="setSection('add-funds')" class="w-full text-left p-2 text-sm text-gray-500 hover:text-[#38BDF8] transition-colors">Add Funds</button>
-            <button (click)="setSection('deposit-log')" class="w-full text-left p-2 text-sm text-gray-500 hover:text-[#38BDF8] transition-colors">Deposit Log</button>
+            <button (click)="setSection('add-funds')" class="w-full text-left p-2 text-sm text-gray-400 hover:text-[#22D3EE] transition-colors">Add Funds</button>
+            <button (click)="setSection('deposit-log')" class="w-full text-left p-2 text-sm text-gray-400 hover:text-[#22D3EE] transition-colors">Deposit Log</button>
           </div>
         }
       </div>
@@ -95,14 +95,14 @@
         </button>
         @if (expandedMenus()['profile']) {
           <div class="pl-10 space-y-1">
-            <button (click)="setSection('change-password')" class="w-full text-left p-2 text-sm text-gray-500 hover:text-[#38BDF8] transition-colors">Change Password</button>
+            <button (click)="setSection('change-password')" class="w-full text-left p-2 text-sm text-gray-400 hover:text-[#22D3EE] transition-colors">Change Password</button>
           </div>
         }
       </div>
 
       <!-- Admin Panel -->
       @if (isAdmin()) {
-        <a routerLink="/admin" class="w-full flex items-center gap-3 p-3 rounded-xl font-medium text-[#38BDF8] bg-[#38BDF8]/10 hover:bg-[#38BDF8]/20 transition-all">
+        <a routerLink="/admin" class="w-full flex items-center gap-3 p-3 rounded-xl font-medium text-[#22D3EE] bg-[#22D3EE]/10 hover:bg-[#22D3EE]/20 transition-all">
           <mat-icon class="text-xl">admin_panel_settings</mat-icon>
           <span class="flex-1 text-left">Admin Panel</span>
         </a>
@@ -119,29 +119,29 @@
   <!-- Main Content -->
   <main class="flex-1 overflow-y-auto bg-[#020617]">
     <!-- Top Nav -->
-    <header class="h-20 border-b border-white/5 flex items-center justify-between px-6 md:px-8 bg-[#020617]/80 backdrop-blur-xl sticky top-0 z-30">
+    <header class="h-20 border-b border-white/10 flex items-center justify-between px-6 md:px-8 bg-[#020617]/80 backdrop-blur-xl sticky top-0 z-30">
       <div class="flex items-center gap-4">
         <button (click)="toggleSidebar()" class="md:hidden p-2 text-gray-400 hover:text-white">
           <mat-icon>menu</mat-icon>
         </button>
-        <div class="text-xl font-bold tracking-tighter md:hidden">KIT GIZMO</div>
+        <div class="text-xl font-bold tracking-tighter md:hidden text-[#22D3EE]">KIT GIZMO</div>
         <h1 class="text-lg font-medium text-gray-400 hidden md:block">Welcome back, {{ (userProfile()?.fullName || 'User').split(' ')[0] }}!</h1>
       </div>
 
       <div class="flex items-center gap-4 md:gap-6">
-        <div class="hidden sm:flex items-center gap-3 px-4 py-2 bg-white/5 rounded-full border border-white/5">
-          <mat-icon class="text-[#38BDF8] text-sm">account_balance_wallet</mat-icon>
-          <span class="text-sm font-bold">${{ stats().balance | number:'1.2-2' }}</span>
+        <div class="hidden sm:flex items-center gap-3 px-4 py-2 bg-white/5 rounded-full border border-white/10">
+          <mat-icon class="text-[#22D3EE] text-sm">account_balance_wallet</mat-icon>
+          <span class="text-sm font-bold text-white">${{ stats().balance | number:'1.2-2' }}</span>
         </div>
         
-        <div class="h-8 w-px bg-white/5 hidden md:block"></div>
+        <div class="h-8 w-px bg-white/10 hidden md:block"></div>
         
         <div class="flex items-center gap-3">
           <div class="text-right hidden sm:block">
-            <div class="text-sm font-bold">{{ userProfile()?.fullName || 'User' }}</div>
+            <div class="text-sm font-bold text-white">{{ userProfile()?.fullName || 'User' }}</div>
             <div class="text-[10px] text-gray-500 uppercase tracking-widest">{{ userProfile()?.role || 'Member' }}</div>
           </div>
-          <div class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[#38BDF8] font-bold">
+          <div class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[#22D3EE] font-bold">
             {{ (userProfile()?.fullName?.toString() || 'U').charAt(0).toUpperCase() }}
           </div>
         </div>
@@ -155,123 +155,123 @@
         <!-- Stat Cards Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           <!-- 1. Balance -->
-          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+          <div class="bg-[#0B1120] border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#22D3EE]/30 transition-all shadow-lg">
             <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">wallet</mat-icon>
+              <mat-icon class="text-gray-400 group-hover:text-[#22D3EE] transition-colors">wallet</mat-icon>
             </div>
             <div>
               <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Balance</div>
-              <div class="text-xl font-bold text-[#38BDF8]">${{ stats().balance | number:'1.2-2' }}</div>
+              <div class="text-xl font-bold text-[#22D3EE]">${{ stats().balance | number:'1.2-2' }}</div>
             </div>
           </div>
           <!-- 2. Total Spent -->
-          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+          <div class="bg-[#0B1120] border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#22D3EE]/30 transition-all shadow-lg">
             <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">credit_card</mat-icon>
+              <mat-icon class="text-gray-400 group-hover:text-[#22D3EE] transition-colors">credit_card</mat-icon>
             </div>
             <div>
               <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Total Spent</div>
-              <div class="text-xl font-bold">${{ stats().totalSpent | number:'1.2-2' }}</div>
+              <div class="text-xl font-bold text-white">${{ stats().totalSpent | number:'1.2-2' }}</div>
             </div>
           </div>
           <!-- 3. Transactions -->
-          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+          <div class="bg-[#0B1120] border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#22D3EE]/30 transition-all shadow-lg">
             <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">swap_horiz</mat-icon>
+              <mat-icon class="text-gray-400 group-hover:text-[#22D3EE] transition-colors">swap_horiz</mat-icon>
             </div>
             <div>
               <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Transactions</div>
-              <div class="text-xl font-bold">{{ stats().transactions }}</div>
+              <div class="text-xl font-bold text-white">{{ stats().transactions }}</div>
             </div>
           </div>
           <!-- 4. Total Deposit -->
-          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+          <div class="bg-[#0B1120] border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#22D3EE]/30 transition-all shadow-lg">
             <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">account_balance_wallet</mat-icon>
+              <mat-icon class="text-gray-400 group-hover:text-[#22D3EE] transition-colors">account_balance_wallet</mat-icon>
             </div>
             <div>
               <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Total Deposit</div>
-              <div class="text-xl font-bold">${{ stats().totalDeposit | number:'1.2-2' }}</div>
+              <div class="text-xl font-bold text-white">${{ stats().totalDeposit | number:'1.2-2' }}</div>
             </div>
           </div>
           <!-- 5. Total Ticket -->
-          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+          <div class="bg-[#0B1120] border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#22D3EE]/30 transition-all shadow-lg">
             <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">confirmation_number</mat-icon>
+              <mat-icon class="text-gray-400 group-hover:text-[#22D3EE] transition-colors">confirmation_number</mat-icon>
             </div>
             <div>
               <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Total Ticket</div>
-              <div class="text-xl font-bold">{{ stats().totalTicket }}</div>
+              <div class="text-xl font-bold text-white">{{ stats().totalTicket }}</div>
             </div>
           </div>
           <!-- 6. Total Order -->
-          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+          <div class="bg-[#0B1120] border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#22D3EE]/30 transition-all shadow-lg">
             <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">shopping_cart</mat-icon>
+              <mat-icon class="text-gray-400 group-hover:text-[#22D3EE] transition-colors">shopping_cart</mat-icon>
             </div>
             <div>
               <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Total Order</div>
-              <div class="text-xl font-bold">{{ stats().totalOrder }}</div>
+              <div class="text-xl font-bold text-white">{{ stats().totalOrder }}</div>
             </div>
           </div>
           <!-- 7. Pending Order -->
-          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+          <div class="bg-[#0B1120] border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#22D3EE]/30 transition-all shadow-lg">
             <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">pending</mat-icon>
+              <mat-icon class="text-gray-400 group-hover:text-[#22D3EE] transition-colors">pending</mat-icon>
             </div>
             <div>
               <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Pending Order</div>
-              <div class="text-xl font-bold">{{ stats().pendingOrder }}</div>
+              <div class="text-xl font-bold text-white">{{ stats().pendingOrder }}</div>
             </div>
           </div>
           <!-- 8. Processing Order -->
-          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+          <div class="bg-[#0B1120] border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#22D3EE]/30 transition-all shadow-lg">
             <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">autorenew</mat-icon>
+              <mat-icon class="text-gray-400 group-hover:text-[#22D3EE] transition-colors">autorenew</mat-icon>
             </div>
             <div>
               <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Processing Order</div>
-              <div class="text-xl font-bold">{{ stats().processingOrder }}</div>
+              <div class="text-xl font-bold text-white">{{ stats().processingOrder }}</div>
             </div>
           </div>
           <!-- 9. Completed Order -->
-          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+          <div class="bg-[#0B1120] border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#22D3EE]/30 transition-all shadow-lg">
             <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">check_circle</mat-icon>
+              <mat-icon class="text-gray-400 group-hover:text-[#22D3EE] transition-colors">check_circle</mat-icon>
             </div>
             <div>
               <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Completed Order</div>
-              <div class="text-xl font-bold">{{ stats().completedOrder }}</div>
+              <div class="text-xl font-bold text-white">{{ stats().completedOrder }}</div>
             </div>
           </div>
           <!-- 10. Refund Order -->
-          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+          <div class="bg-[#0B1120] border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#22D3EE]/30 transition-all shadow-lg">
             <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">undo</mat-icon>
+              <mat-icon class="text-gray-400 group-hover:text-[#22D3EE] transition-colors">undo</mat-icon>
             </div>
             <div>
               <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Refund Order</div>
-              <div class="text-xl font-bold">{{ stats().refundOrder }}</div>
+              <div class="text-xl font-bold text-white">{{ stats().refundOrder }}</div>
             </div>
           </div>
           <!-- 11. Cancelled Order -->
-          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+          <div class="bg-[#0B1120] border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#22D3EE]/30 transition-all shadow-lg">
             <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">cancel</mat-icon>
+              <mat-icon class="text-gray-400 group-hover:text-[#22D3EE] transition-colors">cancel</mat-icon>
             </div>
             <div>
               <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Cancelled Order</div>
-              <div class="text-xl font-bold">{{ stats().cancelledOrder }}</div>
+              <div class="text-xl font-bold text-white">{{ stats().cancelledOrder }}</div>
             </div>
           </div>
           <!-- 12. Total Dripfeeds -->
-          <div class="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#38BDF8]/30 transition-all">
+          <div class="bg-[#0B1120] border border-white/5 p-6 rounded-2xl flex items-center gap-4 group hover:border-[#22D3EE]/30 transition-all shadow-lg">
             <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-              <mat-icon class="text-gray-400 group-hover:text-[#38BDF8] transition-colors">water_drop</mat-icon>
+              <mat-icon class="text-gray-400 group-hover:text-[#22D3EE] transition-colors">water_drop</mat-icon>
             </div>
             <div>
               <div class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Total Dripfeeds</div>
-              <div class="text-xl font-bold">{{ stats().totalDripfeeds }}</div>
+              <div class="text-xl font-bold text-white">{{ stats().totalDripfeeds }}</div>
             </div>
           </div>
         </div>
@@ -280,11 +280,11 @@
           <!-- Quick Order Form -->
           <div class="lg:col-span-1 bg-white/5 border border-white/5 rounded-2xl p-6 space-y-6">
             <div class="flex items-center gap-2 mb-2">
-              <mat-icon class="text-[#38BDF8]">add_circle</mat-icon>
+              <mat-icon class="text-[#22D3EE]">add_circle</mat-icon>
               <h2 class="text-lg font-bold">Quick Order</h2>
             </div>
             <p class="text-sm text-gray-500 leading-relaxed">Select a service and start growing your presence instantly with our AI-driven solutions.</p>
-            <button (click)="setSection('new-order')" class="w-full py-4 bg-[#38BDF8] text-[#020617] font-bold rounded-xl hover:bg-[#38BDF8]/90 transition-all shadow-lg shadow-[#38BDF8]/20">
+            <button (click)="setSection('new-order')" class="w-full py-4 bg-[#22D3EE] text-[#020617] font-bold rounded-xl hover:bg-[#22D3EE]/90 transition-all shadow-lg shadow-[#22D3EE]/20">
               New Order Form
             </button>
           </div>
@@ -293,8 +293,8 @@
           <div class="lg:col-span-2 bg-white/5 border border-white/5 rounded-2xl p-6">
             <div class="flex items-center justify-between mb-6">
               <div class="flex items-center gap-2">
-                <mat-icon class="text-[#38BDF8]">attach_money</mat-icon>
-                <h2 class="text-lg font-bold">Spent</h2>
+                <mat-icon class="text-[#22D3EE]">attach_money</mat-icon>
+                <h2 class="text-lg font-bold text-white">Spent</h2>
               </div>
               <div class="relative">
                 <button (click)="toggleTimeSelector()" class="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-gray-400 hover:text-white transition-all">
@@ -313,6 +313,39 @@
             <div #chartContainer class="chart-container"></div>
           </div>
         </div>
+
+        <!-- Instagram Trust Section -->
+        @if (siteSettings().showInstagramCard && siteSettings().instagramUrl) {
+          <div class="group relative bg-[#0B1120] border border-white/10 rounded-3xl p-8 transition-all duration-500 hover:-translate-y-2 hover:border-[#22D3EE]/50 hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <!-- Neon Glow Effect -->
+            <div class="absolute -inset-0.5 bg-gradient-to-r from-[#E1306C] via-[#833AB4] to-[#405DE6] rounded-3xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500"></div>
+            
+            <div class="relative flex flex-col md:flex-row items-center justify-between gap-6">
+              <div class="flex items-center gap-6">
+                <!-- Instagram Logo Gradient -->
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#FFDC80] via-[#F56040] to-[#833AB4] flex items-center justify-center shadow-lg shadow-purple-500/20 transform group-hover:scale-110 transition-transform duration-500">
+                  <i class="fab fa-instagram text-white text-3xl"></i>
+                </div>
+                <div>
+                  <h2 class="text-xl md:text-2xl font-bold text-white mb-1">
+                    Verified Instagram Community: <span class="text-[#22D3EE]">Follow us @kitgizmo1!</span>
+                  </h2>
+                  <p class="text-gray-400 text-sm md:text-base">
+                    Join our growing family of <span class="text-white font-black">11K+ Followers</span> and get exclusive updates!
+                  </p>
+                </div>
+              </div>
+              <a 
+                [href]="siteSettings().instagramUrl" 
+                target="_blank" 
+                class="px-8 py-4 bg-[#22D3EE] text-[#020617] font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-all shadow-xl shadow-[#22D3EE]/20 flex items-center gap-2"
+              >
+                Follow Now
+                <mat-icon>open_in_new</mat-icon>
+              </a>
+            </div>
+          </div>
+        }
 
         <!-- Recent Orders Table -->
         <div class="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">

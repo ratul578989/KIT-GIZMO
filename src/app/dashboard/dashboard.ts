@@ -64,6 +64,11 @@ interface PaymentMethod {
   createdAt: Timestamp | null;
 }
 
+interface SiteSettings {
+  instagramUrl: string;
+  showInstagramCard: boolean;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -99,6 +104,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   orders = signal<Order[]>([]);
   deposits = signal<Deposit[]>([]);
   paymentMethods = signal<PaymentMethod[]>([]);
+  siteSettings = signal<SiteSettings>({ instagramUrl: '', showInstagramCard: false });
   
   isSidebarOpen = signal(false);
   isAdmin = signal(false);
@@ -309,6 +315,13 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         const ticketsQ = query(collection(db, 'tickets'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
         onSnapshot(ticketsQ, (snapshot) => {
           this.tickets.set(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ticket)));
+        });
+
+        // Real-time Site Settings
+        onSnapshot(doc(db, 'site_settings', 'main'), (snap) => {
+          if (snap.exists()) {
+            this.siteSettings.set(snap.data() as SiteSettings);
+          }
         });
 
         // Track Activity
@@ -646,11 +659,11 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     svg.append('g')
       .attr('transform', `translate(0,${height})`)
       .call(d3.axisBottom(x).ticks(5))
-      .attr('color', '#475569');
+      .attr('color', '#94A3B8');
 
     svg.append('g')
       .call(d3.axisLeft(y).ticks(5).tickFormat(d => `$${(d.valueOf()).toFixed(2)}`))
-      .attr('color', '#475569');
+      .attr('color', '#94A3B8');
   }
 
   private getSpentChartData() {
