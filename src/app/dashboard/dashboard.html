@@ -632,9 +632,9 @@
         </div>
       }
       @if (currentSection() === 'add-funds') {
-        <div class="max-w-3xl mx-auto space-y-8">
+        <div class="w-full max-w-3xl mx-auto space-y-8 px-4 md:px-0">
           @if (!showDepositSuccess()) {
-            <div class="bg-white/5 border border-white/5 rounded-2xl p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div class="bg-white/5 border border-white/5 rounded-2xl p-6 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div>
                 <h2 class="text-2xl font-bold mb-1">Add Funds</h2>
                 <p class="text-gray-500 text-sm">Select a payment method and follow the instructions.</p>
@@ -658,19 +658,19 @@
                 </div>
 
                 @if (selectedMethod()) {
-                  <div class="space-y-8 p-8 bg-white/5 border border-white/10 rounded-2xl animate-in fade-in duration-500">
+                  <div class="space-y-8 p-6 md:p-8 bg-white/5 border border-white/10 rounded-2xl animate-in fade-in duration-500">
                     <!-- Address & Instructions -->
                     <div class="space-y-6">
                       <div class="space-y-3">
                         <label for="wallet-addr-display" class="text-xs font-bold text-gray-500 uppercase tracking-[0.2em]">Wallet Address</label>
                         <div class="flex gap-3">
-                          <div id="wallet-addr-display" class="flex-1 bg-black/40 border border-white/10 rounded-xl px-5 py-4 text-sm font-mono break-all text-[#38BDF8] shadow-inner">
+                          <div id="wallet-addr-display" class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs md:text-sm font-mono break-all text-[#38BDF8] shadow-inner">
                             {{ selectedMethod()?.address }}
                           </div>
                           <div class="relative">
                             <button 
                               (click)="copyAddress(selectedMethod()?.address || '')"
-                              class="h-full px-5 bg-[#38BDF8] text-[#020617] rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center justify-center shadow-lg shadow-[#38BDF8]/20"
+                              class="h-full px-4 md:px-5 bg-[#38BDF8] text-[#020617] rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center justify-center shadow-lg shadow-[#38BDF8]/20"
                               title="Copy Address"
                             >
                               <mat-icon>content_copy</mat-icon>
@@ -693,9 +693,9 @@
                         </div>
                       }
 
-                      <div class="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex gap-3">
+                      <div class="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex flex-col md:flex-row items-center gap-3 text-center md:text-left">
                         <mat-icon class="text-amber-500 shrink-0">info</mat-icon>
-                        <p class="text-[11px] text-amber-200/70 leading-tight">
+                        <p class="text-[10px] md:text-[11px] text-amber-200/70 leading-tight">
                           Please ensure you send the correct currency to the correct network. Incorrect deposits may be permanently lost.
                         </p>
                       </div>
@@ -703,7 +703,7 @@
 
                     <!-- Submission Form -->
                     <div class="space-y-6 pt-8 border-t border-white/10">
-                      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                         <div class="space-y-2">
                           <label for="dep-amount-input" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Amount to Deposit ($)</label>
                           <input 
@@ -729,7 +729,7 @@
                       <button 
                         (click)="deposit()"
                         [disabled]="isDepositing() || depositAmount <= 0 || !transactionId"
-                        class="w-full py-5 bg-[#38BDF8] text-[#020617] font-black uppercase tracking-widest rounded-xl hover:bg-[#38BDF8]/90 transition-all disabled:opacity-50 text-lg shadow-xl shadow-[#38BDF8]/20"
+                        class="w-full py-4 md:py-5 bg-[#38BDF8] text-[#020617] font-black uppercase tracking-widest rounded-xl hover:bg-[#38BDF8]/90 transition-all disabled:opacity-50 text-base md:text-lg shadow-xl shadow-[#38BDF8]/20"
                       >
                         {{ isDepositing() ? 'Submitting...' : 'Submit Deposit Request' }}
                       </button>
