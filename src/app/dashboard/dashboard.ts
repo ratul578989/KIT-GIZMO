@@ -5,8 +5,22 @@ import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
 import { auth, db } from '../../firebase';
 import { signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { doc, collection, query, where, onSnapshot, serverTimestamp, runTransaction, Timestamp } from 'firebase/firestore';
+import { doc, collection, query, where, onSnapshot, serverTimestamp, runTransaction, Timestamp, orderBy } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../firebase';
 import * as d3 from 'd3';
+
+interface Ticket {
+  id: string;
+  userId: string;
+  userEmail: string;
+  subject: string;
+  message: string;
+  imageUrl?: string;
+  status: string;
+  replies: { sender: string, message: string, imageUrl?: string, timestamp: Timestamp }[];
+  createdAt: Timestamp | null;
+}
 
 interface Order {
   id: string;
@@ -17,6 +31,7 @@ interface Order {
   quantity: number;
   charge: number;
   status: string;
+  startCount?: number;
   createdAt: Timestamp | null;
 }
 
@@ -29,6 +44,26 @@ interface UserProfile {
   [key: string]: unknown;
 }
 
+interface Deposit {
+  id: string;
+  userId: string;
+  userEmail: string;
+  amount: number;
+  methodName: string;
+  transactionId: string;
+  status: string;
+  createdAt: Timestamp | null;
+}
+
+interface PaymentMethod {
+  id: string;
+  name: string;
+  address: string;
+  instructions: string;
+  isActive: boolean;
+  createdAt: Timestamp | null;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -39,6 +74,20 @@ interface UserProfile {
       width: 100%;
       height: 300px;
     }
+    @keyframes spin-slow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .animate-spin-slow {
+      animation: spin-slow 8s linear infinite;
+    }
+    @keyframes progress-bar {
+      0% { width: 0%; }
+      100% { width: 100%; }
+    }
+    .animate-progress-bar {
+      animation: progress-bar 7s linear forwards;
+    }
   `]
 })
 export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -48,6 +97,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private route = inject(ActivatedRoute);
   userProfile = signal<UserProfile | null>(null);
   orders = signal<Order[]>([]);
+  deposits = signal<Deposit[]>([]);
+  paymentMethods = signal<PaymentMethod[]>([]);
   
   isSidebarOpen = signal(false);
   isAdmin = signal(false);
@@ -106,15 +157,42 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   // Deposit
   depositAmount = 10;
   transactionId = '';
+  selectedMethodId = '';
+  selectedMethod = signal<PaymentMethod | null>(null);
   isDepositing = signal(false);
+  showDepositSuccess = signal(false);
+  addressCopied = signal(false);
   
   // Support
   ticketSubject = '';
   ticketMessage = '';
   isSubmittingTicket = signal(false);
+  selectedFile = signal<File | null>(null);
+  filePreview = signal<string | null>(null);
+  tickets = signal<Ticket[]>([]);
+  selectedTicket = signal<Ticket | null>(null);
+  replyMessage = signal('');
+  isReplying = signal(false);
+  selectedImage = signal<string | null>(null);
   
   isPlacingOrder = signal(false);
   orderMessage = signal<{ type: 'success' | 'error', text: string } | null>(null);
+
+  orderSearchTerm = signal('');
+  orderStatusFilter = signal('all');
+
+  filteredOrders = computed(() => {
+    const term = this.orderSearchTerm().toLowerCase();
+    const filter = this.orderStatusFilter();
+    
+    return this.orders().filter(order => {
+      const matchesSearch = order.id.toLowerCase().includes(term) || 
+                           order.service.toLowerCase().includes(term) ||
+                           order.link.toLowerCase().includes(term);
+      const matchesFilter = filter === 'all' || order.status === filter;
+      return matchesSearch && matchesFilter;
+    });
+  });
 
   private unsubscribeAuth: (() => void) | null = null;
   private unsubscribeOrders: (() => void) | null = null;
@@ -144,9 +222,27 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
           this.orders.set(ordersData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)));
           this.updateChart();
         });
+
+        // Real-time deposits
+        const depQ = query(collection(db, 'deposits'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
+        onSnapshot(depQ, (snapshot) => {
+          this.deposits.set(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Deposit)));
+        });
+
+        // Real-time tickets
+        const ticketsQ = query(collection(db, 'tickets'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
+        onSnapshot(ticketsQ, (snapshot) => {
+          this.tickets.set(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ticket)));
+        });
       } else {
         this.router.navigate(['/login']);
       }
+    });
+
+    // Real-time Payment Methods (Active only)
+    const methodsQ = query(collection(db, 'paymentMethods'), where('isActive', '==', true));
+    onSnapshot(methodsQ, (snap) => {
+      this.paymentMethods.set(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as PaymentMethod)));
     });
   }
 
@@ -176,6 +272,17 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       ...prev,
       [menu]: !prev[menu]
     }));
+  }
+
+  onMethodChange() {
+    const method = this.paymentMethods().find(m => m.id === this.selectedMethodId);
+    this.selectedMethod.set(method || null);
+  }
+
+  copyAddress(address: string) {
+    navigator.clipboard.writeText(address);
+    this.addressCopied.set(true);
+    setTimeout(() => this.addressCopied.set(false), 2000);
   }
 
   onCategoryChange() {
@@ -228,6 +335,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
           quantity: this.orderQuantity,
           charge: this.totalCharge,
           status: 'pending',
+          startCount: 0,
           createdAt: serverTimestamp()
         };
 
@@ -261,7 +369,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   async deposit() {
     const user = auth.currentUser;
-    if (!user || this.depositAmount <= 0 || !this.transactionId) return;
+    const method = this.selectedMethod();
+    if (!user || !method || this.depositAmount <= 0 || !this.transactionId) return;
 
     this.isDepositing.set(true);
     try {
@@ -271,6 +380,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         userId: user.uid,
         userEmail: user.email,
         amount: this.depositAmount,
+        methodName: method.name,
         transactionId: this.transactionId,
         status: 'pending',
         createdAt: serverTimestamp()
@@ -280,9 +390,20 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         transaction.set(depositRef, depositData);
       });
       
-      this.orderMessage.set({ type: 'success', text: `Deposit request for $${this.depositAmount.toFixed(2)} submitted! Admin will review it soon.` });
+      this.showDepositSuccess.set(true);
       this.depositAmount = 10;
       this.transactionId = '';
+      this.selectedMethodId = '';
+      this.selectedMethod.set(null);
+
+      // Redirect after 7 seconds
+      setTimeout(() => {
+        if (this.currentSection() === 'add-funds') {
+          this.showDepositSuccess.set(false);
+          this.setSection('deposit-log');
+        }
+      }, 7000);
+
     } catch (error) {
       console.error('Deposit error:', error);
       this.orderMessage.set({ type: 'error', text: 'Failed to submit deposit request.' });
@@ -291,12 +412,42 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  onFileSelected(event: Event) {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        this.orderMessage.set({ type: 'error', text: 'Maximum file size: 5MB' });
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        this.orderMessage.set({ type: 'error', text: 'Only image files (PNG, JPG, JPEG) are allowed.' });
+        return;
+      }
+      this.selectedFile.set(file);
+      const reader = new FileReader();
+      reader.onload = () => this.filePreview.set(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  }
+
+  async uploadImage(file: File): Promise<string> {
+    const storageRef = ref(storage, `tickets/${Date.now()}_${file.name}`);
+    const snapshot = await uploadBytes(storageRef, file);
+    return await getDownloadURL(snapshot.ref);
+  }
+
   async submitTicket() {
     const user = auth.currentUser;
     if (!user || !this.ticketSubject || !this.ticketMessage) return;
 
     this.isSubmittingTicket.set(true);
     try {
+      let imageUrl = '';
+      if (this.selectedFile()) {
+        imageUrl = await this.uploadImage(this.selectedFile()!);
+      }
+
       const ticketRef = doc(collection(db, 'tickets'));
       const ticketData = {
         id: ticketRef.id,
@@ -304,6 +455,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         userEmail: user.email,
         subject: this.ticketSubject,
         message: this.ticketMessage,
+        imageUrl: imageUrl || null,
         status: 'open',
         replies: [],
         createdAt: serverTimestamp()
@@ -316,11 +468,50 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       this.orderMessage.set({ type: 'success', text: 'Support ticket submitted successfully!' });
       this.ticketSubject = '';
       this.ticketMessage = '';
+      this.selectedFile.set(null);
+      this.filePreview.set(null);
     } catch (error) {
       console.error('Ticket error:', error);
       this.orderMessage.set({ type: 'error', text: 'Failed to submit support ticket.' });
     } finally {
       this.isSubmittingTicket.set(false);
+    }
+  }
+
+  async replyToTicket(ticketId: string) {
+    const user = auth.currentUser;
+    if (!user || !this.replyMessage().trim()) return;
+
+    this.isReplying.set(true);
+    try {
+      let imageUrl = '';
+      if (this.selectedFile()) {
+        imageUrl = await this.uploadImage(this.selectedFile()!);
+      }
+
+      const ticketRef = doc(db, 'tickets', ticketId);
+      const reply = {
+        sender: 'user',
+        message: this.replyMessage().trim(),
+        imageUrl: imageUrl || null,
+        timestamp: Timestamp.now()
+      };
+
+      await runTransaction(db, async (transaction) => {
+        const snap = await transaction.get(ticketRef);
+        const replies = snap.data()?.['replies'] || [];
+        transaction.update(ticketRef, {
+          replies: [...replies, reply]
+        });
+      });
+
+      this.replyMessage.set('');
+      this.selectedFile.set(null);
+      this.filePreview.set(null);
+    } catch (error) {
+      console.error('Reply error:', error);
+    } finally {
+      this.isReplying.set(false);
     }
   }
 

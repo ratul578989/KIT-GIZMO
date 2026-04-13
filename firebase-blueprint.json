@@ -43,11 +43,26 @@
         "userId": { "type": "string", "description": "UID of the user" },
         "userEmail": { "type": "string", "description": "Email of the user" },
         "amount": { "type": "number", "description": "Deposit amount" },
-        "transactionId": { "type": "string", "description": "USDT/TRC20 Transaction ID" },
+        "methodName": { "type": "string", "description": "Payment method used" },
+        "transactionId": { "type": "string", "description": "Transaction ID" },
         "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "description": "Request status" },
         "createdAt": { "type": "string", "format": "date-time", "description": "Request timestamp" }
       },
-      "required": ["id", "userId", "userEmail", "amount", "transactionId", "status", "createdAt"]
+      "required": ["id", "userId", "userEmail", "amount", "methodName", "transactionId", "status", "createdAt"]
+    },
+    "paymentMethods": {
+      "title": "Payment Method",
+      "description": "Admin defined payment method",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Method ID" },
+        "name": { "type": "string", "description": "Method Name (e.g. USDT TRC20)" },
+        "address": { "type": "string", "description": "Wallet Address" },
+        "instructions": { "type": "string", "description": "Specific instructions" },
+        "isActive": { "type": "boolean", "description": "Whether the method is enabled" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "address", "isActive", "createdAt"]
     },
     "tickets": {
       "title": "Support Ticket",
@@ -92,6 +107,10 @@
     "/tickets/{ticketId}": {
       "schema": "tickets",
       "description": "Support ticket document"
+    },
+    "/paymentMethods/{methodId}": {
+      "schema": "paymentMethods",
+      "description": "Payment method document"
     }
   }
 }

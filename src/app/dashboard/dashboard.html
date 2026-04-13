@@ -86,7 +86,7 @@
         @if (expandedMenus()['deposit']) {
           <div class="pl-10 space-y-1">
             <button (click)="setSection('add-funds')" class="w-full text-left p-2 text-sm text-gray-500 hover:text-[#38BDF8] transition-colors">Add Funds</button>
-            <button class="w-full text-left p-2 text-sm text-gray-500 hover:text-[#38BDF8] transition-colors">Deposit Log</button>
+            <button (click)="setSection('deposit-log')" class="w-full text-left p-2 text-sm text-gray-500 hover:text-[#38BDF8] transition-colors">Deposit Log</button>
           </div>
         }
       </div>
@@ -380,10 +380,11 @@
                     <td class="px-6 py-4 text-sm">{{ order.quantity | number }}</td>
                     <td class="px-6 py-4 text-sm font-bold text-[#38BDF8]">${{ order.charge | number:'1.2-2' }}</td>
                     <td class="px-6 py-4">
-                      <span [class]="'px-2 py-1 rounded-md text-[10px] font-bold uppercase ' + 
+                      <span [class]="'px-3 py-1 rounded-full text-[10px] font-bold uppercase ' + 
                         (order.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400' : 
                          order.status === 'pending' ? 'bg-amber-500/10 text-amber-400' : 
-                         'bg-blue-500/10 text-blue-400')">
+                         order.status === 'processing' ? 'bg-blue-500/10 text-blue-400' :
+                         'bg-red-500/10 text-red-400')">
                         {{ order.status }}
                       </span>
                     </td>
@@ -486,52 +487,292 @@
         </div>
       }
 
-      <!-- Section: Add Funds -->
-      @if (currentSection() === 'add-funds') {
-        <div class="max-w-2xl mx-auto bg-white/5 border border-white/5 rounded-2xl p-8 space-y-8">
-          <div>
-            <h2 class="text-2xl font-bold mb-1">Add Funds</h2>
-            <p class="text-gray-500 text-sm">Deposit funds to your wallet instantly.</p>
+      <!-- Section: Order Log -->
+      @if (currentSection() === 'order-history') {
+        <div class="space-y-6">
+          <div class="flex flex-col md:flex-row gap-4 items-center justify-between bg-white/5 border border-white/10 p-6 rounded-2xl">
+            <div>
+              <h2 class="text-2xl font-bold">Order Log</h2>
+              <p class="text-gray-500 text-sm">View and track all your orders in one place.</p>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+              <!-- Search Bar -->
+              <div class="relative group">
+                <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#38BDF8] transition-colors">search</mat-icon>
+                <input 
+                  type="text" 
+                  [ngModel]="orderSearchTerm()"
+                  (ngModelChange)="orderSearchTerm.set($event)"
+                  placeholder="Search Order ID..." 
+                  class="pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl focus:border-[#38BDF8] outline-none transition-all w-full sm:w-64"
+                >
+              </div>
+              
+              <!-- Filter Dropdown -->
+              <div class="relative">
+                <select 
+                  [ngModel]="orderStatusFilter()"
+                  (ngModelChange)="orderStatusFilter.set($event)"
+                  class="appearance-none pl-4 pr-10 py-2.5 bg-white/5 border border-white/10 rounded-xl focus:border-[#38BDF8] outline-none transition-all w-full sm:w-48 cursor-pointer"
+                >
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="processing">Processing</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                  <option value="refunded">Refunded</option>
+                </select>
+                <mat-icon class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">expand_more</mat-icon>
+              </div>
+            </div>
           </div>
 
-          <div class="space-y-6">
-            <div class="p-6 bg-[#38BDF8]/5 border border-[#38BDF8]/10 rounded-2xl flex items-center justify-between">
+          <div class="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-white/5 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                    <th class="px-6 py-4">ID</th>
+                    <th class="px-6 py-4">Date</th>
+                    <th class="px-6 py-4">Link</th>
+                    <th class="px-6 py-4">Charge</th>
+                    <th class="px-6 py-4">Start Count</th>
+                    <th class="px-6 py-4">Quantity</th>
+                    <th class="px-6 py-4">Service</th>
+                    <th class="px-6 py-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                  @for (order of filteredOrders(); track order.id) {
+                    <tr class="hover:bg-white/5 transition-colors">
+                      <td class="px-6 py-4 text-xs font-mono text-gray-500">#{{ order.id.slice(-8) }}</td>
+                      <td class="px-6 py-4 text-sm text-gray-400">{{ order.createdAt?.toDate() | date:'medium' }}</td>
+                      <td class="px-6 py-4 text-sm">
+                        <a [href]="order.link" target="_blank" class="text-[#38BDF8] hover:underline truncate max-w-[150px] inline-block">
+                          {{ order.link }}
+                        </a>
+                      </td>
+                      <td class="px-6 py-4 text-sm font-bold text-[#38BDF8]">${{ order.charge | number:'1.2-2' }}</td>
+                      <td class="px-6 py-4 text-sm font-mono text-gray-400">{{ order.startCount || 0 | number }}</td>
+                      <td class="px-6 py-4 text-sm">{{ order.quantity | number }}</td>
+                      <td class="px-6 py-4 text-sm font-medium">{{ order.service }}</td>
+                      <td class="px-6 py-4">
+                        <span [class]="'px-3 py-1 rounded-full text-[10px] font-bold uppercase ' + 
+                          (order.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400' : 
+                           order.status === 'pending' ? 'bg-amber-500/10 text-amber-400' : 
+                           order.status === 'processing' ? 'bg-blue-500/10 text-blue-400' :
+                           'bg-red-500/10 text-red-400')">
+                          {{ order.status }}
+                        </span>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="8" class="px-6 py-12 text-center text-gray-500">
+                        <div class="flex flex-col items-center gap-2">
+                          <mat-icon class="text-4xl opacity-20">search_off</mat-icon>
+                          <span>No orders found matching your criteria.</span>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Section: Add Funds -->
+      @if (currentSection() === 'add-funds') {
+        <div class="max-w-3xl mx-auto space-y-8">
+          @if (!showDepositSuccess()) {
+            <div class="bg-white/5 border border-white/5 rounded-2xl p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div>
-                <div class="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1">Current Balance</div>
-                <div class="text-3xl font-bold text-[#38BDF8]">${{ (userProfile()?.balance || 0) | number:'1.2-2' }}</div>
+                <h2 class="text-2xl font-bold mb-1">Add Funds</h2>
+                <p class="text-gray-500 text-sm">Select a payment method and follow the instructions.</p>
               </div>
-              <mat-icon class="text-[#38BDF8] opacity-20 text-4xl h-auto w-auto">account_balance_wallet</mat-icon>
-            </div>
 
-            <div class="space-y-2">
-              <label for="dep-amount" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Amount ($)</label>
-              <input 
-                id="dep-amount"
-                type="number" 
-                [(ngModel)]="depositAmount"
-                min="1"
-                class="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 focus:border-[#38BDF8] outline-none transition-all"
-              >
-            </div>
+              <div class="space-y-6">
+                <!-- Method Selection -->
+                <div class="space-y-2">
+                  <label for="method-select" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Select Payment Method</label>
+                  <select 
+                    id="method-select"
+                    [(ngModel)]="selectedMethodId" 
+                    (change)="onMethodChange()"
+                    class="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 focus:border-[#38BDF8] outline-none transition-all appearance-none"
+                  >
+                    <option value="" disabled>Choose Method</option>
+                    @for (method of paymentMethods(); track method.id) {
+                      <option [value]="method.id" class="bg-[#020617]">{{ method.name }}</option>
+                    }
+                  </select>
+                </div>
 
-            <div class="space-y-2">
-              <label for="trans-id" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Transaction ID (USDT/TRC20)</label>
-              <input 
-                id="trans-id"
-                type="text" 
-                [(ngModel)]="transactionId"
-                placeholder="Enter your USDT/TRC20 Transaction ID"
-                class="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 focus:border-[#38BDF8] outline-none transition-all"
-              >
-            </div>
+                @if (selectedMethod()) {
+                  <div class="space-y-8 p-8 bg-white/5 border border-white/10 rounded-2xl animate-in fade-in duration-500">
+                    <!-- Address & Instructions -->
+                    <div class="space-y-6">
+                      <div class="space-y-3">
+                        <label for="wallet-addr-display" class="text-xs font-bold text-gray-500 uppercase tracking-[0.2em]">Wallet Address</label>
+                        <div class="flex gap-3">
+                          <div id="wallet-addr-display" class="flex-1 bg-black/40 border border-white/10 rounded-xl px-5 py-4 text-sm font-mono break-all text-[#38BDF8] shadow-inner">
+                            {{ selectedMethod()?.address }}
+                          </div>
+                          <div class="relative">
+                            <button 
+                              (click)="copyAddress(selectedMethod()?.address || '')"
+                              class="h-full px-5 bg-[#38BDF8] text-[#020617] rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center justify-center shadow-lg shadow-[#38BDF8]/20"
+                              title="Copy Address"
+                            >
+                              <mat-icon>content_copy</mat-icon>
+                            </button>
+                            @if (addressCopied()) {
+                              <div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded animate-in fade-in zoom-in duration-200">
+                                Copied!
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      </div>
 
-            <button 
-              (click)="deposit()"
-              [disabled]="isDepositing() || depositAmount <= 0 || !transactionId"
-              class="w-full py-5 bg-[#38BDF8] text-[#020617] font-bold rounded-xl hover:bg-[#38BDF8]/90 transition-all disabled:opacity-50 text-lg shadow-lg shadow-[#38BDF8]/20"
-            >
-              {{ isDepositing() ? 'Submitting...' : 'Submit Deposit Request' }}
-            </button>
+                      @if (selectedMethod()?.instructions) {
+                        <div class="space-y-2">
+                          <label for="method-instr-display" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Instructions</label>
+                          <div id="method-instr-display" class="p-4 bg-white/5 rounded-xl border border-white/5 text-sm text-gray-400 leading-relaxed">
+                            {{ selectedMethod()?.instructions }}
+                          </div>
+                        </div>
+                      }
+
+                      <div class="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex gap-3">
+                        <mat-icon class="text-amber-500 shrink-0">info</mat-icon>
+                        <p class="text-[11px] text-amber-200/70 leading-tight">
+                          Please ensure you send the correct currency to the correct network. Incorrect deposits may be permanently lost.
+                        </p>
+                      </div>
+                    </div>
+
+                    <!-- Submission Form -->
+                    <div class="space-y-6 pt-8 border-t border-white/10">
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                          <label for="dep-amount-input" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Amount to Deposit ($)</label>
+                          <input 
+                            id="dep-amount-input"
+                            type="number" 
+                            [(ngModel)]="depositAmount"
+                            min="1"
+                            class="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 focus:border-[#38BDF8] outline-none transition-all"
+                          >
+                        </div>
+                        <div class="space-y-2">
+                          <label for="trans-id-input" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Transaction ID (TXID)</label>
+                          <input 
+                            id="trans-id-input"
+                            type="text" 
+                            [(ngModel)]="transactionId"
+                            placeholder="Paste your TXID here"
+                            class="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 focus:border-[#38BDF8] outline-none transition-all"
+                          >
+                        </div>
+                      </div>
+
+                      <button 
+                        (click)="deposit()"
+                        [disabled]="isDepositing() || depositAmount <= 0 || !transactionId"
+                        class="w-full py-5 bg-[#38BDF8] text-[#020617] font-black uppercase tracking-widest rounded-xl hover:bg-[#38BDF8]/90 transition-all disabled:opacity-50 text-lg shadow-xl shadow-[#38BDF8]/20"
+                      >
+                        {{ isDepositing() ? 'Submitting...' : 'Submit Deposit Request' }}
+                      </button>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="p-12 text-center bg-white/5 border border-dashed border-white/10 rounded-2xl text-gray-500">
+                    Please select a payment method to see deposit details.
+                  </div>
+                }
+              </div>
+            </div>
+          } @else {
+            <!-- Success Message -->
+            <div class="bg-white/5 border border-white/5 rounded-3xl p-12 text-center space-y-8 animate-in zoom-in duration-500 shadow-2xl shadow-[#38BDF8]/5">
+              <div class="relative inline-block">
+                <div class="absolute inset-0 bg-[#38BDF8] blur-2xl opacity-20 animate-pulse"></div>
+                <div class="relative w-24 h-24 rounded-full bg-[#38BDF8]/10 border-2 border-[#38BDF8]/30 flex items-center justify-center mx-auto">
+                  <mat-icon class="text-5xl text-[#38BDF8] animate-spin-slow">schedule</mat-icon>
+                </div>
+              </div>
+              
+              <div class="space-y-4 max-w-md mx-auto">
+                <h2 class="text-3xl font-bold tracking-tight">Submitted Successfully!</h2>
+                <p class="text-gray-400 leading-relaxed text-lg">
+                  Your transaction is now being verified. Please allow <span class="text-[#38BDF8] font-bold">5-20 minutes</span> for the balance to reflect in your account. Thank you for your patience.
+                </p>
+              </div>
+
+              <div class="pt-8 flex flex-col items-center gap-4">
+                <div class="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-[0.2em]">
+                  <span class="w-1.5 h-1.5 rounded-full bg-[#38BDF8] animate-ping"></span>
+                  Redirecting to History...
+                </div>
+                <div class="w-48 h-1 bg-white/5 rounded-full overflow-hidden">
+                  <div class="h-full bg-[#38BDF8] animate-progress-bar"></div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Section: Deposit Log -->
+      @if (currentSection() === 'deposit-log') {
+        <div class="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+          <div class="p-8 border-b border-white/5">
+            <h2 class="text-2xl font-bold">Deposit History</h2>
+            <p class="text-gray-500 text-sm">Track your manual deposit requests and their status.</p>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-white/5 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                  <th class="px-8 py-4">Date</th>
+                  <th class="px-8 py-4">Method</th>
+                  <th class="px-8 py-4">Amount</th>
+                  <th class="px-8 py-4">Transaction ID</th>
+                  <th class="px-8 py-4">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/5">
+                @for (dep of deposits(); track dep.id) {
+                  <tr class="hover:bg-white/5 transition-colors">
+                    <td class="px-8 py-4 text-sm text-gray-400">{{ dep.createdAt?.toDate() | date:'medium' }}</td>
+                    <td class="px-8 py-4 text-sm font-medium">{{ dep.methodName }}</td>
+                    <td class="px-8 py-4 text-sm font-bold text-[#38BDF8]">${{ dep.amount | number:'1.2-2' }}</td>
+                    <td class="px-8 py-4 text-xs font-mono text-gray-500">{{ dep.transactionId }}</td>
+                    <td class="px-8 py-4">
+                      <div class="flex flex-col gap-1">
+                        <span [class]="'px-3 py-1 rounded-full text-[10px] font-bold uppercase w-fit ' + 
+                          (dep.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400' : 
+                           dep.status === 'rejected' ? 'bg-red-500/10 text-red-400' : 
+                           'bg-amber-500/10 text-amber-400')">
+                          {{ dep.status }}
+                        </span>
+                        @if (dep.status === 'pending') {
+                          <span class="text-[9px] text-gray-500 italic">Estimated time: 5-20 mins</span>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="px-8 py-12 text-center text-gray-500">No deposit history found.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
           </div>
         </div>
       }
@@ -563,7 +804,8 @@
 
       <!-- Section: Support -->
       @if (currentSection() === 'support') {
-        <div class="max-w-2xl mx-auto space-y-8">
+        <div class="max-w-4xl mx-auto space-y-8">
+          <!-- Support Header -->
           <div class="bg-white/5 border border-white/5 rounded-2xl p-8 text-center space-y-6">
             <mat-icon class="text-6xl text-[#38BDF8] opacity-20">support_agent</mat-icon>
             <h2 class="text-2xl font-bold">Need Help?</h2>
@@ -580,6 +822,7 @@
             </div>
           </div>
 
+          <!-- Ticket Creation -->
           <div class="bg-white/5 border border-white/5 rounded-2xl p-8 space-y-6">
             <h3 class="text-xl font-bold">Open a Ticket</h3>
             
@@ -610,17 +853,162 @@
                   class="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 focus:border-[#38BDF8] outline-none transition-all resize-none"
                 ></textarea>
               </div>
+
+              <!-- Image Upload -->
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Attachments</span>
+                  <span class="text-[10px] text-gray-500">Maximum file size: 5MB</span>
+                </div>
+                
+                <div class="flex flex-wrap gap-4 items-end">
+                  <label for="ticket-file" class="cursor-pointer group">
+                    <span class="sr-only">Attach Image</span>
+                    <input id="ticket-file" type="file" class="hidden" (change)="onFileSelected($event)" accept="image/*">
+                    <div class="flex items-center gap-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-[#38BDF8]/30 transition-all">
+                      <mat-icon class="text-gray-400 group-hover:text-[#38BDF8]">attach_file</mat-icon>
+                      <span class="text-sm text-gray-400 group-hover:text-white">Attach Image</span>
+                    </div>
+                  </label>
+
+                  @if (filePreview()) {
+                    <div class="relative w-20 h-20 rounded-xl overflow-hidden border border-[#38BDF8]/30 group">
+                      <img [src]="filePreview()" alt="File preview" class="w-full h-full object-cover" referrerpolicy="no-referrer">
+                      <button (click)="selectedFile.set(null); filePreview.set(null)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <mat-icon class="text-xs">close</mat-icon>
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+
               <button 
                 (click)="submitTicket()"
                 [disabled]="isSubmittingTicket() || !ticketSubject || !ticketMessage"
-                class="w-full py-4 bg-[#38BDF8] text-[#020617] font-bold rounded-xl hover:bg-[#38BDF8]/90 transition-all disabled:opacity-50"
+                class="w-full py-4 bg-[#38BDF8] text-[#020617] font-bold rounded-xl hover:bg-[#38BDF8]/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
+                <mat-icon>send</mat-icon>
                 {{ isSubmittingTicket() ? 'Submitting...' : 'Submit Ticket' }}
               </button>
             </div>
+          </div>
+
+          <!-- Ticket History -->
+          <div class="space-y-6">
+            <h3 class="text-xl font-bold">Your Tickets</h3>
+            @for (ticket of tickets(); track ticket.id) {
+              <div class="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+                <div class="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                  <div>
+                    <h4 class="font-bold text-[#38BDF8]">{{ ticket.subject }}</h4>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest">{{ ticket.createdAt?.toDate() | date:'medium' }}</p>
+                  </div>
+                  <span [class]="'px-3 py-1 rounded-full text-[10px] font-bold uppercase ' + (ticket.status === 'open' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-gray-500/10 text-gray-400')">
+                    {{ ticket.status }}
+                  </span>
+                </div>
+                
+                <div class="p-6 space-y-6">
+                  <!-- Initial Message -->
+                  <div class="flex gap-4">
+                    <div class="w-8 h-8 rounded-full bg-[#38BDF8]/20 flex items-center justify-center shrink-0">
+                      <mat-icon class="text-sm text-[#38BDF8]">person</mat-icon>
+                    </div>
+                    <div class="space-y-2 flex-1">
+                      <div class="bg-white/5 p-4 rounded-2xl rounded-tl-none border border-white/5 text-sm leading-relaxed">
+                        {{ ticket.message }}
+                        @if (ticket.imageUrl) {
+                          <div class="mt-4">
+                            <img [src]="ticket.imageUrl" alt="Ticket attachment" class="max-w-xs rounded-xl border border-white/10 cursor-pointer hover:opacity-80 transition-opacity" (click)="selectedImage.set(ticket.imageUrl)" (keydown.enter)="selectedImage.set(ticket.imageUrl)" tabindex="0" referrerpolicy="no-referrer">
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Replies -->
+                  @for (reply of ticket.replies; track reply.timestamp) {
+                    <div [class]="'flex gap-4 ' + (reply.sender === 'admin' ? 'flex-row-reverse' : '')">
+                      <div [class]="'w-8 h-8 rounded-full flex items-center justify-center shrink-0 ' + (reply.sender === 'admin' ? 'bg-[#38BDF8] text-[#020617]' : 'bg-[#38BDF8]/20 text-[#38BDF8]')">
+                        <mat-icon class="text-sm">{{ reply.sender === 'admin' ? 'support_agent' : 'person' }}</mat-icon>
+                      </div>
+                      <div [class]="'space-y-2 flex-1 ' + (reply.sender === 'admin' ? 'text-right' : '')">
+                        <div [class]="'inline-block p-4 rounded-2xl border text-sm leading-relaxed ' + 
+                          (reply.sender === 'admin' ? 'bg-[#38BDF8]/10 border-[#38BDF8]/20 rounded-tr-none text-left' : 'bg-white/5 border-white/5 rounded-tl-none')">
+                          {{ reply.message }}
+                          @if (reply.imageUrl) {
+                            <div class="mt-4">
+                              <img [src]="reply.imageUrl" alt="Reply attachment" class="max-w-xs rounded-xl border border-white/10 cursor-pointer hover:opacity-80 transition-opacity" (click)="selectedImage.set(reply.imageUrl)" (keydown.enter)="selectedImage.set(reply.imageUrl)" tabindex="0" referrerpolicy="no-referrer">
+                            </div>
+                          }
+                        </div>
+                        <div class="text-[9px] text-gray-500 uppercase tracking-tighter">{{ reply.timestamp.toDate() | date:'shortTime' }}</div>
+                      </div>
+                    </div>
+                  }
+
+                  <!-- Reply Form -->
+                  @if (ticket.status === 'open') {
+                    <div class="pt-6 border-t border-white/5 space-y-4">
+                      <div class="flex gap-3 items-end">
+                        <div class="flex-1 space-y-2">
+                          <textarea 
+                            #replyMsg
+                            (input)="replyMessage.set(replyMsg.value)"
+                            [value]="replyMessage()"
+                            rows="1"
+                            placeholder="Type your reply..."
+                            class="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 focus:border-[#38BDF8] outline-none transition-all resize-none text-sm"
+                          ></textarea>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                          <label class="cursor-pointer">
+                            <input type="file" class="hidden" (change)="onFileSelected($event)" accept="image/*">
+                            <div class="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all">
+                              <mat-icon class="text-gray-400">add_a_photo</mat-icon>
+                            </div>
+                          </label>
+                          <button 
+                            (click)="replyToTicket(ticket.id)"
+                            [disabled]="isReplying() || !replyMessage().trim()"
+                            class="p-3 bg-[#38BDF8] text-[#020617] rounded-xl hover:bg-[#38BDF8]/90 transition-all disabled:opacity-50"
+                          >
+                            <mat-icon>send</mat-icon>
+                          </button>
+                        </div>
+                      </div>
+
+                      @if (filePreview()) {
+                        <div class="relative w-16 h-16 rounded-lg overflow-hidden border border-[#38BDF8]/30 group">
+                          <img [src]="filePreview()" alt="File preview" class="w-full h-full object-cover" referrerpolicy="no-referrer">
+                          <button (click)="selectedFile.set(null); filePreview.set(null)" class="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <mat-icon class="text-[10px]">close</mat-icon>
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            } @empty {
+              <div class="p-12 text-center bg-white/5 border border-dashed border-white/10 rounded-2xl text-gray-500">
+                No support tickets yet.
+              </div>
+            }
           </div>
         </div>
       }
     </div>
   </main>
 </div>
+
+<!-- Image Lightbox -->
+@if (selectedImage()) {
+  <div class="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 md:p-12 animate-in fade-in duration-300" (click)="selectedImage.set(null)" (keydown.escape)="selectedImage.set(null)" tabindex="0">
+    <button (click)="selectedImage.set(null)" class="absolute top-8 right-8 text-white hover:text-[#38BDF8] transition-colors">
+      <mat-icon class="text-4xl">close</mat-icon>
+    </button>
+    <img [src]="selectedImage()" alt="Enlarged attachment" class="max-w-full max-h-full object-contain rounded-xl shadow-2xl animate-in zoom-in duration-300" (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()" tabindex="0" referrerpolicy="no-referrer">
+  </div>
+}
