@@ -4,8 +4,8 @@ import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
 import { auth, db } from '../../firebase';
-import { signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { doc, collection, query, where, onSnapshot, serverTimestamp, runTransaction, Timestamp, orderBy } from 'firebase/firestore';
+import { signOut, onAuthStateChanged, User, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { doc, collection, query, where, onSnapshot, serverTimestamp, runTransaction, Timestamp, orderBy, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase';
 import * as d3 from 'd3';
@@ -104,26 +104,26 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   isAdmin = signal(false);
   expandedMenus = signal<Record<string, boolean>>({
     'orders': false,
-    'dripfeed': false,
     'deposit': false,
     'profile': false
   });
 
   stats = computed(() => {
     const allOrders = this.orders();
+    const allDeposits = this.deposits();
     return {
       balance: this.userProfile()?.['balance'] || 0,
       totalSpent: this.userProfile()?.['totalSpent'] || 0,
-      transactions: 0, // Placeholder
-      totalDeposit: this.userProfile()?.['totalDeposit'] || 0,
-      totalTicket: 0, // Placeholder
+      transactions: allOrders.length + allDeposits.length,
+      totalDeposit: allDeposits.filter(d => d.status === 'approved').reduce((acc, d) => acc + d.amount, 0),
+      totalTicket: this.tickets().length,
       totalOrder: allOrders.length,
       pendingOrder: allOrders.filter(o => o.status === 'pending').length,
       processingOrder: allOrders.filter(o => o.status === 'processing').length,
       completedOrder: allOrders.filter(o => o.status === 'completed').length,
       refundOrder: allOrders.filter(o => o.status === 'refunded').length,
       cancelledOrder: allOrders.filter(o => o.status === 'cancelled').length,
-      totalDripfeeds: 0 // Placeholder
+      totalDripfeeds: 0
     };
   });
 
@@ -163,11 +163,68 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   showDepositSuccess = signal(false);
   addressCopied = signal(false);
   
+  // Profile & Password
+  profilePreviewUrl = signal<string | null>(null);
+  selectedFile: File | null = null;
+  isSavingProfile = signal(false);
+  passwordForm = { current: '', new: '', confirm: '' };
+  passwordError = signal<string | null>(null);
+  passwordSuccess = signal<string | null>(null);
+
+  onFileSelected(event: Event) {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        this.orderMessage.set({ type: 'error', text: 'Maximum file size: 10MB' });
+        return;
+      }
+      this.selectedFile = file;
+      this.profilePreviewUrl.set(URL.createObjectURL(file));
+    }
+  }
+
+  async saveProfile() {
+    if (!this.selectedFile || !auth.currentUser) return;
+    this.isSavingProfile.set(true);
+    try {
+      const storageRef = ref(storage, `profiles/${auth.currentUser.uid}`);
+      await uploadBytes(storageRef, this.selectedFile);
+      const url = await getDownloadURL(storageRef);
+      await updateDoc(doc(db, 'users', auth.currentUser.uid), { profilePicture: url });
+      alert('Profile updated successfully!');
+    } catch {
+      alert('Failed to update profile. Please try again.');
+    } finally {
+      this.isSavingProfile.set(false);
+    }
+  }
+
+  async changePassword() {
+    this.passwordError.set(null);
+    this.passwordSuccess.set(null);
+    if (this.passwordForm.new !== this.passwordForm.confirm) {
+      this.passwordError.set('Passwords do not match');
+      return;
+    }
+    try {
+      const user = auth.currentUser;
+      if (!user || !user.email) return;
+      const cred = EmailAuthProvider.credential(user.email, this.passwordForm.current);
+      await reauthenticateWithCredential(user, cred);
+      await updatePassword(user, this.passwordForm.new);
+      this.passwordSuccess.set('Password updated successfully!');
+      this.passwordForm = { current: '', new: '', confirm: '' };
+    } catch {
+      this.passwordError.set('Incorrect Current Password');
+    }
+  }
+  
   // Support
   ticketSubject = '';
   ticketMessage = '';
   isSubmittingTicket = signal(false);
-  selectedFile = signal<File | null>(null);
+  selectedTicketFile = signal<File | null>(null);
   filePreview = signal<string | null>(null);
   tickets = signal<Ticket[]>([]);
   selectedTicket = signal<Ticket | null>(null);
@@ -192,6 +249,26 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       const matchesFilter = filter === 'all' || order.status === filter;
       return matchesSearch && matchesFilter;
     });
+  });
+
+  transactions = computed(() => {
+    const orders = this.orders().map(o => ({
+      id: o.id,
+      date: o.createdAt,
+      type: 'Order Placement',
+      amount: -o.charge,
+      method: 'N/A',
+      status: o.status
+    }));
+    const deposits = this.deposits().map(d => ({
+      id: d.id,
+      date: d.createdAt,
+      type: 'Deposit',
+      amount: d.amount,
+      method: d.methodName,
+      status: d.status
+    }));
+    return [...orders, ...deposits].sort((a, b) => (b.date?.toMillis() || 0) - (a.date?.toMillis() || 0));
   });
 
   private unsubscribeAuth: (() => void) | null = null;
@@ -412,25 +489,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  onFileSelected(event: Event) {
-    const target = event.target as HTMLInputElement;
-    const file = target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        this.orderMessage.set({ type: 'error', text: 'Maximum file size: 5MB' });
-        return;
-      }
-      if (!file.type.startsWith('image/')) {
-        this.orderMessage.set({ type: 'error', text: 'Only image files (PNG, JPG, JPEG) are allowed.' });
-        return;
-      }
-      this.selectedFile.set(file);
-      const reader = new FileReader();
-      reader.onload = () => this.filePreview.set(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  }
-
   async uploadImage(file: File): Promise<string> {
     const storageRef = ref(storage, `tickets/${Date.now()}_${file.name}`);
     const snapshot = await uploadBytes(storageRef, file);
@@ -444,8 +502,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isSubmittingTicket.set(true);
     try {
       let imageUrl = '';
-      if (this.selectedFile()) {
-        imageUrl = await this.uploadImage(this.selectedFile()!);
+      if (this.selectedTicketFile()) {
+        imageUrl = await this.uploadImage(this.selectedTicketFile()!);
       }
 
       const ticketRef = doc(collection(db, 'tickets'));
@@ -468,7 +526,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       this.orderMessage.set({ type: 'success', text: 'Support ticket submitted successfully!' });
       this.ticketSubject = '';
       this.ticketMessage = '';
-      this.selectedFile.set(null);
+      this.selectedTicketFile.set(null);
       this.filePreview.set(null);
     } catch (error) {
       console.error('Ticket error:', error);
@@ -485,8 +543,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isReplying.set(true);
     try {
       let imageUrl = '';
-      if (this.selectedFile()) {
-        imageUrl = await this.uploadImage(this.selectedFile()!);
+      if (this.selectedTicketFile()) {
+        imageUrl = await this.uploadImage(this.selectedTicketFile()!);
       }
 
       const ticketRef = doc(db, 'tickets', ticketId);
@@ -506,7 +564,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       });
 
       this.replyMessage.set('');
-      this.selectedFile.set(null);
+      this.selectedTicketFile.set(null);
       this.filePreview.set(null);
     } catch (error) {
       console.error('Reply error:', error);

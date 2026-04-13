@@ -566,6 +566,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   }
 
   async handleDeposit(dep: Deposit, status: 'approved' | 'rejected') {
+    if (dep.status !== 'pending') return;
     try {
       await runTransaction(db, async (transaction) => {
         const depRef = doc(db, 'deposits', dep.id);
