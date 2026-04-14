@@ -12,7 +12,7 @@ import { doc, getDocFromServer } from 'firebase/firestore';
 })
 export class App implements OnInit {
   ngOnInit() {
-    this.testConnection();
+    // this.testConnection();
   }
 
   private async testConnection() {
