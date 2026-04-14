@@ -5,11 +5,20 @@ import { RouterModule } from '@angular/router';
 import { animate, stagger, inView } from "motion";
 import { auth, db } from '../../firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { doc, collection, query, where, orderBy, getDoc, getDocs } from 'firebase/firestore';
 
 interface SiteSettings {
   instagramUrl: string;
   showInstagramCard: boolean;
+}
+
+interface Marketplace {
+  id: string;
+  name: string;
+  logoUrl: string;
+  redirectUrl: string;
+  isActive: boolean;
+  order: number;
 }
 
 @Component({
@@ -30,23 +39,34 @@ export class HomeComponent implements OnInit, OnDestroy {
   currentUser = signal<User | null>(null);
   isAuthReady = signal(false);
   siteSettings = signal<SiteSettings>({ instagramUrl: '', showInstagramCard: false });
+  marketplaces = signal<Marketplace[]>([]);
   
-  private unsubscribers: Unsubscribe[] = [];
+  private unsubscribers: (() => void)[] = [];
 
   ngOnInit() {
     if (isPlatformBrowser(this.platformId)) {
-      onAuthStateChanged(auth, (user) => {
+      const authUnsub = onAuthStateChanged(auth, (user) => {
         this.currentUser.set(user);
         this.isAuthReady.set(true);
       });
+      this.unsubscribers.push(authUnsub);
 
       // Real-time Site Settings
-      const settingsUnsub = onSnapshot(doc(db, 'site_settings', 'main'), (snap) => {
+      getDoc(doc(db, 'site_settings', 'main')).then(snap => {
         if (snap.exists()) {
           this.siteSettings.set(snap.data() as SiteSettings);
         }
       });
-      this.unsubscribers.push(settingsUnsub);
+
+      // Real-time Marketplaces
+      const marketplacesQ = query(
+        collection(db, 'marketplaces'),
+        where('isActive', '==', true),
+        orderBy('order', 'asc')
+      );
+      getDocs(marketplacesQ).then(snap => {
+        this.marketplaces.set(snap.docs.map((doc) => doc.data() as Marketplace));
+      });
 
       // Scroll-triggered animations for Trust Stats
       inView("#trust-stats", () => {

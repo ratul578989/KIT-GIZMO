@@ -25,6 +25,26 @@
     <div class="relative z-10 max-w-5xl mx-auto text-center">
       <h1 class="text-5xl md:text-7xl font-bold tracking-tight mb-6 text-white">Elevate Your Social Media Presence instantly with KIT GIZMO</h1>
       <p class="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">Empowering your digital success with high-impact traffic and data-driven strategies.</p>
+      
+      <!-- Global Marketplace Integration Section -->
+      <div class="mb-12 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
+        <h2 class="text-[10px] md:text-xs font-black tracking-[0.3em] text-gray-500 uppercase mb-8">
+          INTEGRATED ACROSS GLOBAL MARKETPLACES
+        </h2>
+        <div class="flex flex-row flex-wrap justify-center items-center gap-12 md:gap-20 px-4">
+          @for (mp of marketplaces(); track mp.id) {
+            <a [href]="mp.redirectUrl" target="_blank" class="group relative">
+              <img [src]="mp.logoUrl" 
+                   [alt]="mp.name" 
+                   class="h-8 md:h-10 transition-all duration-500 filter drop-shadow-[0_0_15px_rgba(34,211,238,0.2)] hover:drop-shadow-[0_0_25px_rgba(34,211,238,0.4)] hover:scale-105"
+                   referrerpolicy="no-referrer">
+            </a>
+          } @empty {
+            <div class="text-gray-500 italic text-xs">Connecting to global marketplaces...</div>
+          }
+        </div>
+      </div>
+
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
         <a routerLink="/signup" class="px-8 py-4 bg-[#22D3EE] text-[#020617] rounded-xl font-bold hover:bg-[#22D3EE]/90 transition-colors text-center">Start Your Growth Now →</a>
         <button class="px-8 py-4 bg-white/5 text-white border border-[#22D3EE]/30 rounded-xl font-bold hover:bg-white/10 transition-colors">View Our Premium Services</button>
