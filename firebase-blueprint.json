@@ -89,21 +89,6 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "userId", "userEmail", "subject", "message", "status", "createdAt"]
-    },
-    "marketplaces": {
-      "title": "Marketplace Partner",
-      "description": "Dynamic marketplace logo for landing page",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string", "description": "Marketplace ID" },
-        "name": { "type": "string", "description": "Marketplace name (e.g. Amazon)" },
-        "logoUrl": { "type": "string", "description": "Logo image URL" },
-        "redirectUrl": { "type": "string", "description": "Redirect link URL" },
-        "isActive": { "type": "boolean", "description": "Whether the logo is visible" },
-        "order": { "type": "number", "description": "Display order" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "name", "logoUrl", "isActive", "createdAt"]
     }
   },
   "firestore": {
@@ -126,10 +111,6 @@
     "/paymentMethods/{methodId}": {
       "schema": "paymentMethods",
       "description": "Payment method document"
-    },
-    "/marketplaces/{marketplaceId}": {
-      "schema": "marketplaces",
-      "description": "Marketplace logo document"
     }
   }
 }

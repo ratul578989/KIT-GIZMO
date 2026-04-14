@@ -253,8 +253,8 @@ export class LoginComponent {
   }
 
   private getFriendlyErrorMessage(code: string): string {
-    if (code === 'auth/invalid-credential' || code === 'auth/user-not-found' || code === 'auth/wrong-password') {
-      return 'Invalid email or password. Please verify your credentials. If you have not created an account yet, please sign up.';
+    if (code.includes('invalid-credential') || code.includes('user-not-found') || code.includes('wrong-password')) {
+      return 'Invalid email or password. Please check your credentials and try again.';
     }
 
     switch (code) {
@@ -268,10 +268,7 @@ export class LoginComponent {
         return 'Login popup was blocked by your browser. Please allow popups for this site.';
       case 'auth/network-request-failed':
         return 'Network error. Please check your internet connection.';
-      case 'auth/internal-error':
-        return 'A temporary server error occurred. Please try again in a few moments.';
       default:
-        console.warn('Unhandled Firebase Auth error code:', code);
         return 'An error occurred during login. Please try again or contact support.';
     }
   }

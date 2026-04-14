@@ -1,11 +1,11 @@
-import { Component, inject, signal, OnInit, computed } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
 import { auth, db } from '../../firebase';
 import { signOut } from 'firebase/auth';
-import { collection, query, orderBy, doc, updateDoc, increment, runTransaction, Timestamp, serverTimestamp, getDoc, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, increment, runTransaction, Timestamp, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase';
 
@@ -66,16 +66,6 @@ interface PaymentMethod {
   createdAt: Timestamp;
 }
 
-interface Marketplace {
-  id: string;
-  name: string;
-  logoUrl: string;
-  redirectUrl: string;
-  isActive: boolean;
-  order: number;
-  createdAt: Timestamp;
-}
-
 interface SiteSettings {
   instagramUrl: string;
   showInstagramCard: boolean;
@@ -126,13 +116,6 @@ interface SiteSettings {
           >
             <mat-icon>payments</mat-icon>
             Payment Methods
-          </button>
-          <button 
-            (click)="currentSection.set('marketplaces')"
-            [class]="'w-full flex items-center gap-3 p-3 rounded-xl font-medium transition-all ' + (currentSection() === 'marketplaces' ? 'bg-[#22D3EE] text-[#020617]' : 'text-gray-400 hover:bg-white/5 hover:text-white')"
-          >
-            <mat-icon>storefront</mat-icon>
-            Manage Marketplaces
           </button>
           <button 
             (click)="currentSection.set('site-settings')"
@@ -628,120 +611,6 @@ interface SiteSettings {
           </div>
         }
 
-        <!-- Marketplaces Section -->
-        @if (currentSection() === 'marketplaces') {
-          <div class="space-y-8">
-            <!-- Add/Edit Marketplace Form -->
-            <div class="bg-white/5 border border-white/10 rounded-2xl p-8 space-y-6 shadow-lg">
-              <h2 class="text-xl font-bold text-white">{{ editingMarketplace() ? 'Edit' : 'Add New' }} Marketplace</h2>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="space-y-2">
-                  <label for="mp-name" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Marketplace Name</label>
-                  <input id="mp-name" [(ngModel)]="marketplaceForm.name" type="text" placeholder="e.g. Amazon" class="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-3 outline-none focus:border-[#22D3EE]">
-                </div>
-                <div class="space-y-2">
-                  <label for="mp-url" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Redirect URL</label>
-                  <input id="mp-url" [(ngModel)]="marketplaceForm.redirectUrl" type="text" placeholder="https://amazon.com" class="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-3 outline-none focus:border-[#22D3EE]">
-                </div>
-                <div class="space-y-2">
-                  <label for="mp-order" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Display Order</label>
-                  <input id="mp-order" [(ngModel)]="marketplaceForm.order" type="number" class="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-3 outline-none focus:border-[#22D3EE]">
-                </div>
-                <div class="space-y-2">
-                  <label for="mp-logo" class="text-xs font-bold text-gray-500 uppercase tracking-widest">Logo Image</label>
-                  <div class="flex items-center gap-4">
-                    <label class="cursor-pointer flex-1">
-                      <input id="mp-logo" type="file" class="hidden" (change)="onLogoSelected($event)" accept="image/*">
-                      <div class="w-full bg-white/5 border border-white/10 text-gray-400 rounded-xl px-4 py-3 hover:bg-white/10 transition-all flex items-center gap-2">
-                        <mat-icon>upload_file</mat-icon>
-                        {{ logoFile() ? logoFile()?.name : 'Choose Logo File' }}
-                      </div>
-                    </label>
-                    @if (logoPreview() || marketplaceForm.logoUrl) {
-                      <div class="w-12 h-12 rounded-lg bg-white/5 border border-white/10 p-2 flex items-center justify-center">
-                        <img [src]="logoPreview() || marketplaceForm.logoUrl" alt="Preview" class="max-w-full max-h-full object-contain" referrerpolicy="no-referrer">
-                      </div>
-                    }
-                  </div>
-                </div>
-              </div>
-              <div class="flex gap-4">
-                <button 
-                  (click)="saveMarketplace()" 
-                  [disabled]="isSavingMarketplace() || !marketplaceForm.name"
-                  class="px-8 py-3 bg-[#22D3EE] text-[#020617] font-bold rounded-xl hover:bg-[#22D3EE]/90 transition-all shadow-lg shadow-[#22D3EE]/20 disabled:opacity-50"
-                >
-                  {{ isSavingMarketplace() ? 'Saving...' : (editingMarketplace() ? 'Update' : 'Add') + ' Marketplace' }}
-                </button>
-                @if (editingMarketplace()) {
-                  <button (click)="cancelEditMarketplace()" class="px-8 py-3 bg-white/5 text-white rounded-xl font-bold hover:bg-white/10 transition-all">
-                    Cancel
-                  </button>
-                }
-              </div>
-            </div>
-
-            <!-- List of Marketplaces -->
-            <div class="bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-lg">
-              <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                  <thead>
-                    <tr class="text-gray-500 text-xs font-bold uppercase tracking-widest border-b border-white/10">
-                      <th class="p-6">Logo</th>
-                      <th class="p-6">Name</th>
-                      <th class="p-6">Order</th>
-                      <th class="p-6">Status</th>
-                      <th class="p-6">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-white/10">
-                    @for (mp of marketplaces(); track mp.id) {
-                      <tr class="hover:bg-white/5 transition-colors">
-                        <td class="p-6">
-                          <div class="w-12 h-12 rounded-lg bg-white/5 border border-white/10 p-2 flex items-center justify-center">
-                            <img [src]="mp.logoUrl" alt="Logo" class="max-w-full max-h-full object-contain" referrerpolicy="no-referrer">
-                          </div>
-                        </td>
-                        <td class="p-6">
-                          <div class="font-medium text-white">{{ mp.name }}</div>
-                          <div class="text-xs text-gray-500">{{ mp.redirectUrl }}</div>
-                        </td>
-                        <td class="p-6 text-gray-400">{{ mp.order }}</td>
-                        <td class="p-6">
-                          <button (click)="toggleMarketplaceStatus(mp)" [class]="'px-3 py-1 rounded-full text-[10px] font-bold uppercase ' + (mp.isActive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400')">
-                            {{ mp.isActive ? 'Active' : 'Hidden' }}
-                          </button>
-                        </td>
-                        <td class="p-6">
-                          <div class="flex gap-2">
-                            <button (click)="editMarketplace(mp)" class="p-2 text-[#22D3EE] hover:bg-[#22D3EE]/10 rounded transition-all">
-                              <mat-icon>edit</mat-icon>
-                            </button>
-                            <button (click)="deleteMarketplace(mp.id)" class="p-2 text-red-400 hover:bg-red-500/10 rounded transition-all">
-                              <mat-icon>delete</mat-icon>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    } @empty {
-                      <tr>
-                        <td colspan="5" class="p-12 text-center text-gray-500 italic">No marketplaces added yet.</td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        }
-
-        @if (showMarketplaceToast()) {
-          <div class="fixed bottom-8 right-8 bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold shadow-2xl animate-in slide-in-from-bottom-4 duration-300 flex items-center gap-2">
-            <mat-icon>check_circle</mat-icon>
-            Marketplace Added Successfully!
-          </div>
-        }
-
         <!-- Error Toast -->
         @if (adminError()) {
           <div class="fixed bottom-8 right-8 z-[200] bg-red-500 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 animate-in slide-in-from-right-8">
@@ -785,16 +654,15 @@ interface SiteSettings {
     }
   `],
 })
-export class AdminComponent implements OnInit {
+export class AdminComponent implements OnInit, OnDestroy {
   private router = inject(Router);
-  currentSection = signal<'users' | 'deposits' | 'orders' | 'tickets' | 'payment-methods' | 'site-settings' | 'marketplaces'>('users');
+  currentSection = signal<'users' | 'deposits' | 'orders' | 'tickets' | 'payment-methods' | 'site-settings'>('users');
   
   users = signal<User[]>([]);
   deposits = signal<Deposit[]>([]);
   orders = signal<Order[]>([]);
   tickets = signal<Ticket[]>([]);
   paymentMethods = signal<PaymentMethod[]>([]);
-  marketplaces = signal<Marketplace[]>([]);
   siteSettings = signal<SiteSettings>({ instagramUrl: '', showInstagramCard: true });
   
   isSavingSettings = signal(false);
@@ -834,173 +702,55 @@ export class AdminComponent implements OnInit {
   filePreview = signal<string | null>(null);
   selectedImage = signal<string | null>(null);
 
-  // Marketplace Management
-  isSavingMarketplace = signal(false);
-  showMarketplaceToast = signal(false);
-  editingMarketplace = signal<Marketplace | null>(null);
-  logoFile = signal<File | null>(null);
-  logoPreview = signal<string | null>(null);
-  marketplaceForm = {
-    name: '',
-    redirectUrl: '',
-    logoUrl: '',
-    order: 0
-  };
-
   newMethod = {
     name: '',
     address: '',
     instructions: ''
   };
 
+  private unsubscribers: (() => void)[] = [];
+
   ngOnInit() {
-    // Users
-    getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc'))).then(snap => {
+    // Real-time Users
+    const usersQ = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+    this.unsubscribers.push(onSnapshot(usersQ, (snap) => {
       this.users.set(snap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User)));
-    });
+    }));
 
-    // Deposits
-    getDocs(query(collection(db, 'deposits'), orderBy('createdAt', 'desc'))).then(snap => {
+    // Real-time Deposits
+    const depositsQ = query(collection(db, 'deposits'), orderBy('createdAt', 'desc'));
+    this.unsubscribers.push(onSnapshot(depositsQ, (snap) => {
       this.deposits.set(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Deposit)));
-    });
+    }));
 
-    // Orders
-    getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc'))).then(snap => {
+    // Real-time Orders
+    const ordersQ = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    this.unsubscribers.push(onSnapshot(ordersQ, (snap) => {
       this.orders.set(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order)));
-    });
+    }));
 
-    // Tickets
-    getDocs(query(collection(db, 'tickets'), orderBy('createdAt', 'desc'))).then(snap => {
+    // Real-time Tickets
+    const ticketsQ = query(collection(db, 'tickets'), orderBy('createdAt', 'desc'));
+    this.unsubscribers.push(onSnapshot(ticketsQ, (snap) => {
       this.tickets.set(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ticket)));
-    });
+    }));
 
-    // Payment Methods
-    getDocs(query(collection(db, 'paymentMethods'), orderBy('createdAt', 'desc'))).then(snap => {
+    // Real-time Payment Methods
+    const methodsQ = query(collection(db, 'paymentMethods'), orderBy('createdAt', 'desc'));
+    this.unsubscribers.push(onSnapshot(methodsQ, (snap) => {
       this.paymentMethods.set(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as PaymentMethod)));
-    });
+    }));
 
-    // Site Settings
-    getDoc(doc(db, 'site_settings', 'main')).then(snap => {
+    // Real-time Site Settings
+    this.unsubscribers.push(onSnapshot(doc(db, 'site_settings', 'main'), (snap) => {
       if (snap.exists()) {
         this.siteSettings.set(snap.data() as SiteSettings);
       }
-    });
-
-    // Marketplaces
-    getDocs(query(collection(db, 'marketplaces'), orderBy('order', 'asc'))).then(snap => {
-      this.marketplaces.set(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Marketplace)));
-    });
+    }));
   }
 
-  onLogoSelected(event: Event) {
-    const target = event.target as HTMLInputElement;
-    const file = target.files?.[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        this.adminError.set('Logo file size limit: 2MB');
-        return;
-      }
-      this.logoFile.set(file);
-      const reader = new FileReader();
-      reader.onload = () => this.logoPreview.set(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  }
-
-  async saveMarketplace() {
-    if (!this.marketplaceForm.name) return;
-    this.isSavingMarketplace.set(true);
-    try {
-      let logoUrl = this.marketplaceForm.logoUrl;
-      if (this.logoFile()) {
-        const storageRef = ref(storage, `marketplaces/${Date.now()}_${this.logoFile()!.name}`);
-        const snapshot = await uploadBytes(storageRef, this.logoFile()!);
-        logoUrl = await getDownloadURL(snapshot.ref);
-      }
-
-      if (!logoUrl) {
-        this.adminError.set('Please upload a logo image.');
-        return;
-      }
-
-      const editing = this.editingMarketplace();
-      if (editing) {
-        await updateDoc(doc(db, 'marketplaces', editing.id), {
-          ...this.marketplaceForm,
-          logoUrl
-        });
-      } else {
-        const mpRef = doc(collection(db, 'marketplaces'));
-        await runTransaction(db, async (transaction) => {
-          transaction.set(mpRef, {
-            id: mpRef.id,
-            ...this.marketplaceForm,
-            logoUrl,
-            isActive: true,
-            createdAt: serverTimestamp()
-          });
-        });
-      }
-
-      this.cancelEditMarketplace();
-      this.showMarketplaceToast.set(true);
-      setTimeout(() => this.showMarketplaceToast.set(false), 3000);
-      
-      // Refresh marketplaces
-      const snap = await getDocs(query(collection(db, 'marketplaces'), orderBy('order', 'asc')));
-      this.marketplaces.set(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Marketplace)));
-    } catch (error) {
-      console.error('Error saving marketplace:', error);
-      this.adminError.set('Failed to save marketplace.');
-    } finally {
-      this.isSavingMarketplace.set(false);
-    }
-  }
-
-  editMarketplace(mp: Marketplace) {
-    this.editingMarketplace.set(mp);
-    this.marketplaceForm = {
-      name: mp.name,
-      redirectUrl: mp.redirectUrl || '',
-      logoUrl: mp.logoUrl,
-      order: mp.order || 0
-    };
-    this.logoPreview.set(null);
-    this.logoFile.set(null);
-  }
-
-  cancelEditMarketplace() {
-    this.editingMarketplace.set(null);
-    this.marketplaceForm = { name: '', redirectUrl: '', logoUrl: '', order: 0 };
-    this.logoFile.set(null);
-    this.logoPreview.set(null);
-  }
-
-  async toggleMarketplaceStatus(mp: Marketplace) {
-    try {
-      await updateDoc(doc(db, 'marketplaces', mp.id), {
-        isActive: !mp.isActive
-      });
-    } catch (error) {
-      console.error('Error toggling marketplace status:', error);
-    }
-  }
-
-  deleteMarketplace(id: string) {
-    this.confirmAction.set({
-      message: 'Are you sure you want to delete this marketplace logo?',
-      action: async () => {
-        try {
-          await runTransaction(db, async (transaction) => {
-            transaction.delete(doc(db, 'marketplaces', id));
-          });
-          this.confirmAction.set(null);
-        } catch (error) {
-          console.error('Error deleting marketplace:', error);
-          this.adminError.set('Failed to delete marketplace.');
-        }
-      }
-    });
+  ngOnDestroy() {
+    this.unsubscribers.forEach(unsub => unsub());
   }
 
   async addPaymentMethod() {

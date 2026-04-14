@@ -1,11 +1,11 @@
-import { Component, inject, signal, OnInit, AfterViewInit, ElementRef, ViewChild, computed } from '@angular/core';
+import { Component, inject, signal, OnInit, AfterViewInit, ElementRef, ViewChild, OnDestroy, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
 import { auth, db } from '../../firebase';
 import { signOut, onAuthStateChanged, User, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
-import { doc, collection, query, where, serverTimestamp, runTransaction, Timestamp, orderBy, updateDoc, getDoc, getDocs } from 'firebase/firestore';
+import { doc, collection, query, where, onSnapshot, serverTimestamp, runTransaction, Timestamp, orderBy, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase';
 import * as d3 from 'd3';
@@ -93,26 +93,9 @@ interface SiteSettings {
     .animate-progress-bar {
       animation: progress-bar 7s linear forwards;
     }
-    @keyframes glow {
-      0%, 100% { opacity: 1; text-shadow: 0 0 5px rgba(255, 255, 255, 0.2); }
-      50% { opacity: 0.8; text-shadow: 0 0 15px rgba(34, 211, 238, 0.6); }
-    }
-    .animate-glow {
-      animation: glow 3s ease-in-out infinite;
-    }
-    @keyframes marquee {
-      0% { transform: translateX(100%); }
-      100% { transform: translateX(-100%); }
-    }
-    .animate-marquee {
-      display: inline-block;
-      white-space: nowrap;
-      animation: marquee 30s linear infinite;
-      text-shadow: 0 0 10px rgba(34, 211, 238, 0.3);
-    }
   `]
 })
-export class DashboardComponent implements OnInit, AfterViewInit {
+export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('chartContainer') chartContainer!: ElementRef;
   
   private router = inject(Router);
@@ -178,7 +161,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   totalCharge = 0;
   
   // Deposit
-  depositAmount = 30;
+  depositAmount = 10;
   transactionId = '';
   selectedMethodId = '';
   selectedMethod = signal<PaymentMethod | null>(null);
@@ -293,8 +276,9 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     return [...orders, ...deposits].sort((a, b) => (b.date?.toMillis() || 0) - (a.date?.toMillis() || 0));
   });
 
-  private unsubscribers: (() => void)[] = [];
-  
+  private unsubscribeAuth: (() => void) | null = null;
+  private unsubscribeOrders: (() => void) | null = null;
+
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
       if (params['error'] === 'access-denied') {
@@ -302,12 +286,12 @@ export class DashboardComponent implements OnInit, AfterViewInit {
       }
     });
 
-    onAuthStateChanged(auth, async (user: User | null) => {
+    this.unsubscribeAuth = onAuthStateChanged(auth, async (user: User | null) => {
       if (user) {
         this.isAdmin.set(user.email === 'info.kitgizmo@gmail.com');
         
         // Real-time user profile
-        getDoc(doc(db, 'users', user.uid)).then(docSnap => {
+        onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
           if (docSnap.exists()) {
             this.userProfile.set(docSnap.data() as Record<string, unknown>);
           }
@@ -315,7 +299,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
 
         // Real-time orders
         const q = query(collection(db, 'orders'), where('userId', '==', user.uid));
-        getDocs(q).then(snapshot => {
+        this.unsubscribeOrders = onSnapshot(q, (snapshot) => {
           const ordersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
           this.orders.set(ordersData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)));
           this.updateChart();
@@ -323,21 +307,22 @@ export class DashboardComponent implements OnInit, AfterViewInit {
 
         // Real-time deposits
         const depQ = query(collection(db, 'deposits'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
-        getDocs(depQ).then(snapshot => {
+        onSnapshot(depQ, (snapshot) => {
           this.deposits.set(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Deposit)));
         });
 
         // Real-time tickets
         const ticketsQ = query(collection(db, 'tickets'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
-        getDocs(ticketsQ).then(snapshot => {
+        onSnapshot(ticketsQ, (snapshot) => {
           this.tickets.set(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ticket)));
         });
 
         // Real-time Site Settings
-        const settingsSnap = await getDoc(doc(db, 'site_settings', 'main'));
-        if (settingsSnap.exists()) {
-          this.siteSettings.set(settingsSnap.data() as SiteSettings);
-        }
+        onSnapshot(doc(db, 'site_settings', 'main'), (snap) => {
+          if (snap.exists()) {
+            this.siteSettings.set(snap.data() as SiteSettings);
+          }
+        });
 
         // Track Activity
         this.trackActivity(user.uid);
@@ -348,13 +333,18 @@ export class DashboardComponent implements OnInit, AfterViewInit {
 
     // Real-time Payment Methods (Active only)
     const methodsQ = query(collection(db, 'paymentMethods'), where('isActive', '==', true));
-    getDocs(methodsQ).then(snap => {
+    onSnapshot(methodsQ, (snap) => {
       this.paymentMethods.set(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as PaymentMethod)));
     });
   }
 
   ngAfterViewInit() {
     this.updateChart();
+  }
+
+  ngOnDestroy() {
+    if (this.unsubscribeAuth) this.unsubscribeAuth();
+    if (this.unsubscribeOrders) this.unsubscribeOrders();
   }
 
   setSection(section: string) {
@@ -482,7 +472,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   async deposit() {
     const user = auth.currentUser;
     const method = this.selectedMethod();
-    if (!user || !method || this.depositAmount < 30 || this.depositAmount > 500000 || !this.transactionId) return;
+    if (!user || !method || this.depositAmount <= 0 || !this.transactionId) return;
 
     this.isDepositing.set(true);
     try {
@@ -503,7 +493,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
       });
       
       this.showDepositSuccess.set(true);
-      this.depositAmount = 30;
+      this.depositAmount = 10;
       this.transactionId = '';
       this.selectedMethodId = '';
       this.selectedMethod.set(null);
