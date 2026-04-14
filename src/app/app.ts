@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component} from '@angular/core';
+import {ChangeDetectionStrategy, Component, OnInit} from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { db } from '../firebase';
 import { doc, getDocFromServer } from 'firebase/firestore';
@@ -10,7 +10,11 @@ import { doc, getDocFromServer } from 'firebase/firestore';
   imports: [RouterModule],
   template: `<router-outlet></router-outlet>`,
 })
-export class App {
+export class App implements OnInit {
+  ngOnInit() {
+    this.testConnection();
+  }
+
   private async testConnection() {
     try {
       // Test connection to Firestore

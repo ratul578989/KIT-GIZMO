@@ -93,23 +93,6 @@ interface SiteSettings {
     .animate-progress-bar {
       animation: progress-bar 7s linear forwards;
     }
-    @keyframes glow {
-      0%, 100% { opacity: 1; text-shadow: 0 0 5px rgba(255, 255, 255, 0.2); }
-      50% { opacity: 0.8; text-shadow: 0 0 15px rgba(34, 211, 238, 0.6); }
-    }
-    .animate-glow {
-      animation: glow 3s ease-in-out infinite;
-    }
-    @keyframes marquee {
-      0% { transform: translateX(100%); }
-      100% { transform: translateX(-100%); }
-    }
-    .animate-marquee {
-      display: inline-block;
-      white-space: nowrap;
-      animation: marquee 30s linear infinite;
-      text-shadow: 0 0 10px rgba(34, 211, 238, 0.3);
-    }
   `]
 })
 export class DashboardComponent implements OnInit, AfterViewInit {
@@ -178,7 +161,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   totalCharge = 0;
   
   // Deposit
-  depositAmount = 30;
+  depositAmount = 10;
   transactionId = '';
   selectedMethodId = '';
   selectedMethod = signal<PaymentMethod | null>(null);
@@ -482,7 +465,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   async deposit() {
     const user = auth.currentUser;
     const method = this.selectedMethod();
-    if (!user || !method || this.depositAmount < 30 || this.depositAmount > 500000 || !this.transactionId) return;
+    if (!user || !method || this.depositAmount <= 0 || !this.transactionId) return;
 
     this.isDepositing.set(true);
     try {
@@ -503,7 +486,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
       });
       
       this.showDepositSuccess.set(true);
-      this.depositAmount = 30;
+      this.depositAmount = 10;
       this.transactionId = '';
       this.selectedMethodId = '';
       this.selectedMethod.set(null);
