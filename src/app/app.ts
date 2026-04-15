@@ -2,13 +2,17 @@ import {ChangeDetectionStrategy, Component, OnInit} from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { db } from '../firebase';
 import { doc, getDocFromServer } from 'firebase/firestore';
+import { PromoBannerComponent } from './promo-banner';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-root',
   standalone: true,
-  imports: [RouterModule],
-  template: `<router-outlet></router-outlet>`,
+  imports: [RouterModule, PromoBannerComponent],
+  template: `
+    <app-promo-banner></app-promo-banner>
+    <router-outlet></router-outlet>
+  `,
 })
 export class App implements OnInit {
   ngOnInit() {

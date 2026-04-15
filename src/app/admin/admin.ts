@@ -16,6 +16,7 @@ interface User {
   role: string;
   balance: number;
   totalSpent?: number;
+  totalDeposit?: number;
   lastLogin?: Timestamp;
   lastActive?: Timestamp;
   createdAt: Timestamp;
@@ -140,6 +141,13 @@ interface SiteSettings {
           >
             <mat-icon>settings</mat-icon>
             Site Settings
+          </button>
+          <button 
+            (click)="currentSection.set('balance-adjustment')"
+            [class]="'w-full flex items-center gap-3 p-3 rounded-xl font-medium transition-all ' + (currentSection() === 'balance-adjustment' ? 'bg-[#22D3EE] text-[#020617]' : 'text-gray-400 hover:bg-white/5 hover:text-white')"
+          >
+            <mat-icon>account_balance</mat-icon>
+            Balance Adjustment
           </button>
           
           <div class="pt-4 mt-4 border-t border-white/10">
@@ -742,6 +750,64 @@ interface SiteSettings {
           </div>
         }
 
+        <!-- Balance Adjustment Section -->
+        @if (currentSection() === 'balance-adjustment') {
+          <div class="space-y-8">
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-8 space-y-6 shadow-lg">
+              <h2 class="text-xl font-bold text-white">Manual Balance Adjustment</h2>
+              <div class="relative group">
+                <mat-icon class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#22D3EE] transition-colors">search</mat-icon>
+                <input 
+                  type="text" 
+                  [ngModel]="userSearchQuery()"
+                  (ngModelChange)="userSearchQuery.set($event)"
+                  placeholder="Search user by name, email or UID..." 
+                  class="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-xl focus:border-[#22D3EE] outline-none transition-all text-white"
+                >
+              </div>
+
+              <div class="grid grid-cols-1 gap-4 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
+                @for (user of filteredUsers(); track user.uid) {
+                  <div class="bg-white/5 border border-white/10 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 hover:border-[#22D3EE]/30 transition-all">
+                    <div class="flex items-center gap-4">
+                      <div class="w-12 h-12 rounded-full bg-[#22D3EE]/10 flex items-center justify-center text-[#22D3EE] font-bold text-xl">
+                        {{ user.fullName.charAt(0).toUpperCase() }}
+                      </div>
+                      <div>
+                        <div class="font-bold text-white">{{ user.fullName }}</div>
+                        <div class="text-xs text-gray-500">{{ user.email }}</div>
+                        <div class="text-[10px] text-gray-600 font-mono mt-1">UID: {{ user.uid }}</div>
+                      </div>
+                    </div>
+
+                    <div class="flex flex-col items-center md:items-end gap-2">
+                      <div class="text-sm text-gray-400">Current Balance: <span class="text-[#22D3EE] font-bold">$ {{ user.balance | number:'1.2-2' }}</span></div>
+                      <div class="flex items-center gap-3">
+                        <input #adjAmt type="number" placeholder="Amount" class="w-24 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#22D3EE]">
+                        <button (click)="adjustBalance(user, +adjAmt.value, 'add'); adjAmt.value = ''" class="px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg text-xs font-bold hover:bg-emerald-500 hover:text-black transition-all">ADD</button>
+                        <button (click)="adjustBalance(user, +adjAmt.value, 'subtract'); adjAmt.value = ''" class="px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-xs font-bold hover:bg-red-500 hover:text-white transition-all">SUBTRACT</button>
+                      </div>
+                    </div>
+                  </div>
+                } @empty {
+                  <div class="text-center py-12 text-gray-500 italic">No users found matching your search.</div>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Success Toast -->
+        @if (successMessage()) {
+          <div class="fixed bottom-8 right-8 z-[200] bg-emerald-500 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 animate-in slide-in-from-right-8">
+            <mat-icon>check_circle</mat-icon>
+            <span class="font-medium">{{ successMessage() }}</span>
+            <button (click)="successMessage.set(null)" class="ml-4 p-1 hover:bg-white/10 rounded-full">
+              <mat-icon class="text-sm">close</mat-icon>
+            </button>
+          </div>
+        }
+
         <!-- Error Toast -->
         @if (adminError()) {
           <div class="fixed bottom-8 right-8 z-[200] bg-red-500 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 animate-in slide-in-from-right-8">
@@ -787,9 +853,18 @@ interface SiteSettings {
 })
 export class AdminComponent implements OnInit {
   private router = inject(Router);
-  currentSection = signal<'users' | 'deposits' | 'orders' | 'tickets' | 'payment-methods' | 'site-settings' | 'marketplaces'>('users');
+  currentSection = signal<'users' | 'deposits' | 'orders' | 'tickets' | 'payment-methods' | 'site-settings' | 'marketplaces' | 'balance-adjustment'>('users');
   
   users = signal<User[]>([]);
+  userSearchQuery = signal('');
+  filteredUsers = computed(() => {
+    const query = this.userSearchQuery().toLowerCase();
+    return this.users().filter(u => 
+      u.fullName.toLowerCase().includes(query) || 
+      u.email.toLowerCase().includes(query) ||
+      u.uid.toLowerCase().includes(query)
+    );
+  });
   deposits = signal<Deposit[]>([]);
   orders = signal<Order[]>([]);
   tickets = signal<Ticket[]>([]);
@@ -800,6 +875,7 @@ export class AdminComponent implements OnInit {
   isSavingSettings = signal(false);
   showSettingsToast = signal(false);
   adminError = signal<string | null>(null);
+  successMessage = signal<string | null>(null);
   confirmAction = signal<{ message: string, action: () => void } | null>(null);
   
   selectedUser = signal<User | null>(null);
@@ -1066,6 +1142,47 @@ export class AdminComponent implements OnInit {
     }
   }
 
+  async adjustBalance(user: User, amount: number, type: 'add' | 'subtract') {
+    if (isNaN(amount) || amount <= 0) {
+      this.adminError.set('Please enter a valid amount greater than 0.');
+      return;
+    }
+    
+    const adjustment = type === 'add' ? amount : -amount;
+    
+    try {
+      await runTransaction(db, async (transaction) => {
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await transaction.get(userRef);
+        if (!userSnap.exists()) throw new Error('User not found');
+        
+        const currentBalance = userSnap.data()['balance'] || 0;
+        if (type === 'subtract' && currentBalance < amount) {
+          throw new Error(`Insufficient balance. Current: $${currentBalance.toFixed(2)}`);
+        }
+
+        transaction.update(userRef, {
+          balance: increment(adjustment)
+        });
+      });
+
+      // Update local state immediately for better UX
+      this.users.update(users => users.map(u => 
+        u.uid === user.uid 
+          ? { ...u, balance: (u.balance || 0) + adjustment } 
+          : u
+      ));
+
+      this.successMessage.set(`Balance updated successfully! ${type === 'add' ? 'Added' : 'Subtracted'} $${amount.toFixed(2)}`);
+      setTimeout(() => this.successMessage.set(null), 3000);
+      
+    } catch (error: unknown) {
+      console.error('Error adjusting balance:', error);
+      const message = error instanceof Error ? error.message : 'Failed to adjust balance.';
+      this.adminError.set(message);
+    }
+  }
+
   async handleDeposit(dep: Deposit, status: 'approved' | 'rejected') {
     if (dep.status !== 'pending') return;
     try {
@@ -1082,8 +1199,22 @@ export class AdminComponent implements OnInit {
           });
         }
       });
+
+      this.successMessage.set(`Deposit ${status} successfully!`);
+      setTimeout(() => this.successMessage.set(null), 3000);
+      
+      // Update local state
+      this.deposits.update(deps => deps.map(d => d.id === dep.id ? { ...d, status } : d));
+      if (status === 'approved') {
+        this.users.update(users => users.map(u => 
+          u.uid === dep.userId 
+            ? { ...u, balance: (u.balance || 0) + dep.amount, totalDeposit: (u.totalDeposit || 0) + dep.amount } 
+            : u
+        ));
+      }
     } catch (error) {
       console.error('Error handling deposit:', error);
+      this.adminError.set('Failed to update deposit status.');
     }
   }
 

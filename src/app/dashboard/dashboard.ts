@@ -465,9 +465,20 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   async deposit() {
     const user = auth.currentUser;
     const method = this.selectedMethod();
-    if (!user || !method || this.depositAmount <= 0 || !this.transactionId) return;
+    if (!user || !method || !this.transactionId) return;
+
+    if (this.depositAmount < 30) {
+      this.orderMessage.set({ type: 'error', text: 'Minimum deposit amount is $30.' });
+      return;
+    }
+
+    if (this.depositAmount > 500000) {
+      this.orderMessage.set({ type: 'error', text: 'Maximum deposit amount is $500,000.' });
+      return;
+    }
 
     this.isDepositing.set(true);
+    this.orderMessage.set(null);
     try {
       const depositRef = doc(collection(db, 'deposits'));
       const depositData = {

@@ -13,7 +13,7 @@
 
   <!-- Sidebar -->
   <aside 
-    [class]="'fixed inset-y-0 left-0 z-50 w-72 bg-[#0B1120] border-r border-white/10 flex flex-col transition-transform duration-300 md:relative md:translate-x-0 ' + (isSidebarOpen() ? 'translate-x-0' : '-translate-x-full')"
+    [class]="'fixed inset-y-0 left-0 top-[37px] z-50 w-72 bg-[#0B1120] border-r border-white/10 flex flex-col transition-transform duration-300 md:relative md:translate-x-0 md:top-0 ' + (isSidebarOpen() ? 'translate-x-0' : '-translate-x-full')"
   >
     <div class="p-6 flex items-center justify-between border-b border-white/10">
       <div class="text-2xl font-bold tracking-tighter text-[#22D3EE]">KIT GIZMO</div>
@@ -672,6 +672,12 @@
                 <h2 class="text-2xl font-bold mb-1">Add Funds</h2>
                 <p class="text-gray-500 text-sm">Select a payment method and follow the instructions.</p>
               </div>
+
+              @if (orderMessage()) {
+                <div [class]="'p-4 rounded-xl text-sm ' + (orderMessage()?.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20')">
+                  {{ orderMessage()?.text }}
+                </div>
+              }
 
               <div class="space-y-6">
                 <!-- Method Selection -->
