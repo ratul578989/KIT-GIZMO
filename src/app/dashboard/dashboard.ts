@@ -1,11 +1,11 @@
-import { Component, inject, signal, OnInit, AfterViewInit, ElementRef, ViewChild, OnDestroy, computed } from '@angular/core';
+import { Component, inject, signal, OnInit, AfterViewInit, ElementRef, ViewChild, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
 import { auth, db } from '../../firebase';
 import { signOut, onAuthStateChanged, User, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
-import { doc, collection, query, where, onSnapshot, serverTimestamp, runTransaction, Timestamp, orderBy, updateDoc } from 'firebase/firestore';
+import { doc, collection, query, where, serverTimestamp, runTransaction, Timestamp, orderBy, updateDoc, getDoc, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase';
 import * as d3 from 'd3';
@@ -95,7 +95,7 @@ interface SiteSettings {
     }
   `]
 })
-export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
+export class DashboardComponent implements OnInit, AfterViewInit {
   @ViewChild('chartContainer') chartContainer!: ElementRef;
   
   private router = inject(Router);
@@ -276,9 +276,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     return [...orders, ...deposits].sort((a, b) => (b.date?.toMillis() || 0) - (a.date?.toMillis() || 0));
   });
 
-  private unsubscribeAuth: (() => void) | null = null;
-  private unsubscribeOrders: (() => void) | null = null;
-
+  private unsubscribers: (() => void)[] = [];
+  
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
       if (params['error'] === 'access-denied') {
@@ -286,12 +285,12 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     });
 
-    this.unsubscribeAuth = onAuthStateChanged(auth, async (user: User | null) => {
+    onAuthStateChanged(auth, async (user: User | null) => {
       if (user) {
         this.isAdmin.set(user.email === 'info.kitgizmo@gmail.com');
         
         // Real-time user profile
-        onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
+        getDoc(doc(db, 'users', user.uid)).then(docSnap => {
           if (docSnap.exists()) {
             this.userProfile.set(docSnap.data() as Record<string, unknown>);
           }
@@ -299,7 +298,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
         // Real-time orders
         const q = query(collection(db, 'orders'), where('userId', '==', user.uid));
-        this.unsubscribeOrders = onSnapshot(q, (snapshot) => {
+        getDocs(q).then(snapshot => {
           const ordersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
           this.orders.set(ordersData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)));
           this.updateChart();
@@ -307,22 +306,21 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
         // Real-time deposits
         const depQ = query(collection(db, 'deposits'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
-        onSnapshot(depQ, (snapshot) => {
+        getDocs(depQ).then(snapshot => {
           this.deposits.set(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Deposit)));
         });
 
         // Real-time tickets
         const ticketsQ = query(collection(db, 'tickets'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
-        onSnapshot(ticketsQ, (snapshot) => {
+        getDocs(ticketsQ).then(snapshot => {
           this.tickets.set(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ticket)));
         });
 
         // Real-time Site Settings
-        onSnapshot(doc(db, 'site_settings', 'main'), (snap) => {
-          if (snap.exists()) {
-            this.siteSettings.set(snap.data() as SiteSettings);
-          }
-        });
+        const settingsSnap = await getDoc(doc(db, 'site_settings', 'main'));
+        if (settingsSnap.exists()) {
+          this.siteSettings.set(settingsSnap.data() as SiteSettings);
+        }
 
         // Track Activity
         this.trackActivity(user.uid);
@@ -333,18 +331,13 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Real-time Payment Methods (Active only)
     const methodsQ = query(collection(db, 'paymentMethods'), where('isActive', '==', true));
-    onSnapshot(methodsQ, (snap) => {
+    getDocs(methodsQ).then(snap => {
       this.paymentMethods.set(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as PaymentMethod)));
     });
   }
 
   ngAfterViewInit() {
     this.updateChart();
-  }
-
-  ngOnDestroy() {
-    if (this.unsubscribeAuth) this.unsubscribeAuth();
-    if (this.unsubscribeOrders) this.unsubscribeOrders();
   }
 
   setSection(section: string) {

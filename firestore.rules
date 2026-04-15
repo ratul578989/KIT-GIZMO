@@ -61,7 +61,12 @@ service cloud.firestore {
     }
 
     match /site_settings/{docId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /marketplaces/{marketplaceId} {
+      allow read: if true;
       allow write: if isAdmin();
     }
   }

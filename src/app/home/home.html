@@ -31,35 +31,17 @@
         <h2 class="text-[10px] md:text-xs font-black tracking-[0.3em] text-gray-500 uppercase mb-8">
           INTEGRATED ACROSS GLOBAL MARKETPLACES
         </h2>
-        <div class="flex flex-wrap justify-center items-center gap-8 md:gap-16 px-4">
-          <!-- AliExpress -->
-          <div class="group relative">
-            <img src="https://upload.wikimedia.org/wikipedia/en/thumb/5/5b/AliExpress_logo.svg/1200px-AliExpress_logo.svg.png" 
-                 alt="AliExpress" 
-                 class="h-5 md:h-7 grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500 filter drop-shadow-[0_0_10px_rgba(34,211,238,0.3)] group-hover:drop-shadow-[0_0_15px_rgba(34,211,238,0.6)]"
-                 referrerpolicy="no-referrer">
-          </div>
-          <!-- Shopify -->
-          <div class="group relative">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Shopify_logo_2018.svg/1200px-Shopify_logo_2018.svg.png" 
-                 alt="Shopify" 
-                 class="h-6 md:h-8 grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500 filter drop-shadow-[0_0_10px_rgba(34,211,238,0.3)] group-hover:drop-shadow-[0_0_15px_rgba(34,211,238,0.6)]"
-                 referrerpolicy="no-referrer">
-          </div>
-          <!-- Amazon -->
-          <div class="group relative">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/1200px-Amazon_logo.svg.png" 
-                 alt="Amazon" 
-                 class="h-5 md:h-7 grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500 filter drop-shadow-[0_0_10px_rgba(34,211,238,0.3)] group-hover:drop-shadow-[0_0_15px_rgba(34,211,238,0.6)]"
-                 referrerpolicy="no-referrer">
-          </div>
-          <!-- Alibaba -->
-          <div class="group relative">
-            <img src="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Alibaba-Group-Logo.svg/1200px-Alibaba-Group-Logo.svg.png" 
-                 alt="Alibaba" 
-                 class="h-6 md:h-8 grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500 filter drop-shadow-[0_0_10px_rgba(34,211,238,0.3)] group-hover:drop-shadow-[0_0_15px_rgba(34,211,238,0.6)]"
-                 referrerpolicy="no-referrer">
-          </div>
+        <div class="flex flex-row flex-wrap justify-center items-center gap-12 md:gap-20 px-4">
+          @for (mp of marketplaces(); track mp.id) {
+            <a [href]="mp.redirectUrl" target="_blank" class="group relative">
+              <img [src]="mp.logoUrl" 
+                   [alt]="mp.name" 
+                   class="h-8 md:h-10 transition-all duration-500 filter drop-shadow-[0_0_15px_rgba(34,211,238,0.2)] hover:drop-shadow-[0_0_25px_rgba(34,211,238,0.4)] hover:scale-105"
+                   referrerpolicy="no-referrer">
+            </a>
+          } @empty {
+            <div class="text-gray-500 italic text-xs">Connecting to global marketplaces...</div>
+          }
         </div>
       </div>
 
